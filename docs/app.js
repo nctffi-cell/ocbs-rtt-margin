@@ -621,6 +621,22 @@ function recalcBuy(V, D, room, cash) {
   const fmtDrop = d => d == null ? '—' : (d === Infinity ? SAFE : fmtPct(d));
   $('bPCall').textContent  = fmtDrop(dCall);
   $('bPForce').textContent = fmtDrop(dForce);
+  // Giá CỤ THỂ từng mã ở mức Call/Force: mỗi mã giảm cùng tỷ lệ → giá = giá hiện tại × (1 − % giảm).
+  //   Danh sách mã = các dòng danh mục Tab 1 (có giá) + mã ghép mua thêm (nếu có), gộp trùng theo mã.
+  const pxStocks = new Map();
+  for (const h of STATE.holdings) {
+    const s = (h.sym || '').toUpperCase();
+    if (s && h.qty > 0 && h.price > 0) pxStocks.set(s, h.price);
+  }
+  if (hasBuy && sym && price > 0) pxStocks.set(sym.toUpperCase(), price);   // mã mua thêm
+  // Khi % giảm = Infinity (không bao giờ Call) hoặc không có CP → không có giá để hiển thị.
+  const fmtPxList = d => {
+    if (d == null || d === Infinity || pxStocks.size === 0) return '—';
+    const x = 1 - d;                                                       // tỷ lệ giá còn lại
+    return Array.from(pxStocks, ([s, p]) => `${s} ${fmtVND(p * x)}`).join(' · ');
+  };
+  $('bPxCall').textContent  = fmtPxList(dCall);
+  $('bPxForce').textContent = fmtPxList(dForce);
   // 2 dòng "% giảm" cũ dùng để hiển thị Rtt hiện tại của danh mục (đã ghép) cho dễ đối chiếu.
   const denNow = PVt + Math.max(casht - Dt, 0);
   const rttNow = denNow > 0 ? (PVt + casht - Dt) / denNow : null;
