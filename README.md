@@ -58,7 +58,14 @@ Repo → **Settings → Pages**:
 Vài phút sau site lên tại `https://nctffi-cell.github.io/ocbs-rtt-margin/`.
 
 ### 3. Domain riêng dautugiatri.vn
-File `docs/CNAME` đã chứa `dautugiatri.vn`. Tại nhà cung cấp DNS của domain, thêm:
+
+Tình huống thực tế: domain đăng ký tại **Nhân Hòa (nhanhoa.com)**, DNS chuyển sang
+**ZoneDNS.vn**. File `docs/CNAME` đã chứa `dautugiatri.vn`.
+
+**a. Tạo zone trên ZoneDNS.vn** → thêm domain `dautugiatri.vn`, ghi lại cặp
+nameserver ZoneDNS cấp (vd `ns1.zonedns.vn` / `ns2.zonedns.vn`).
+
+**b. Trong ZoneDNS, tạo bản ghi** (xóa A/AAAA cũ trỏ Cloudflare nếu có):
 
 | Loại  | Tên/Host | Giá trị |
 |-------|----------|---------|
@@ -68,7 +75,13 @@ File `docs/CNAME` đã chứa `dautugiatri.vn`. Tại nhà cung cấp DNS của 
 | A     | @        | 185.199.111.153 |
 | CNAME | www      | nctffi-cell.github.io |
 
-(4 IP trên là của GitHub Pages cho apex domain.) Sau khi DNS lan truyền, vào
+(4 IP trên là của GitHub Pages cho apex domain — cố định.)
+
+**c. Đổi nameserver tại Nhân Hòa** → Quản lý tên miền → `dautugiatri.vn` →
+đổi NS từ Cloudflare (`lynn.ns.cloudflare.com`, `meg.ns.cloudflare.com`) sang cặp
+NS của ZoneDNS. Lan truyền `.vn` mất vài giờ → tối đa 48h.
+
+**d.** Khi DNS trỏ đúng (kiểm tra `nslookup dautugiatri.vn` ra 185.199.x.x), vào
 Settings → Pages bật **Enforce HTTPS**.
 
 ## Cập nhật giá tự động
