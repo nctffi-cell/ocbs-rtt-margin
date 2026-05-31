@@ -1,0 +1,29 @@
+# ── File cá nhân / nội bộ — KHÔNG đẩy lên GitHub ─────────────
+# Công cụ Excel chạy trên máy (dữ liệu nội bộ)
+excel-tools/
+*.xlsx
+*.xls
+~$*                      # file lock Excel khi đang mở
+*.pdf
+
+# Log
+*.log
+
+# Thư mục lưu trữ file cũ / build tạm
+_archive/
+
+# Giá chặn do server.py ghi khi chạy local (mỗi máy một bản).
+# Bản TĨNH cho GitHub Pages nằm ở docs/caps.json (được commit riêng).
+/caps.json
+
+# ── Python ───────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+
+# ── Hệ điều hành ─────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Claude Code local settings (cá nhân) ────────────────────
+.claude/settings.local.json

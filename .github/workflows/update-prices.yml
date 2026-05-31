@@ -1,0 +1,47 @@
+name: Cập nhật giá tham chiếu
+
+# Chạy 16:00 giờ VN (09:00 UTC) các ngày làm việc T2–T6, và cho phép chạy tay.
+on:
+  schedule:
+    - cron: '0 9 * * 1-5'
+  workflow_dispatch:
+
+# Cho phép job commit & push prices.json về repo.
+permissions:
+  contents: write
+
+# Tránh 2 lần chạy chồng nhau.
+concurrency:
+  group: update-prices
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Lấy giá tham chiếu
+        env:
+          SCP_TOKEN: ${{ secrets.SCP_TOKEN }}
+        run: python scripts/update_prices_ci.py
+
+      - name: Commit & push nếu có thay đổi
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/prices.json
+          if git diff --cached --quiet; then
+            echo "Không có thay đổi giá → bỏ qua commit."
+          else
+            DATE=$(python -c "import json;print(json.load(open('docs/prices.json',encoding='utf-8'))['tradingDate'])")
+            git commit -m "data: cap nhat gia tham chieu $DATE (tu dong qua Actions)"
+            git push
+            echo "✓ Đã push giá mới."
+          fi
