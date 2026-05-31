@@ -1,5 +1,6 @@
 // ╔════════════════════════════════════════════════════════════╗
 // ║  OCBS Margin Calculator – Frontend logic                  ║
+// ║  (cache-bust ?v= trong index.html tu cap nhat khi sua file) ║
 // ╚════════════════════════════════════════════════════════════╝
 
 const STATE = {

@@ -25,5 +25,6 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
-# ── Claude Code local settings (cá nhân) ────────────────────
-.claude/settings.local.json
+# ── Claude Code (cá nhân) — ignore tất cả trừ script tiện ích ─
+.claude/*
+!.claude/cache_bust.py
