@@ -1,9 +1,15 @@
 name: Cập nhật giá tham chiếu
 
-# Chạy 16:00 giờ VN (09:00 UTC) các ngày làm việc T2–T6, và cho phép chạy tay.
+# Chạy sau giờ đóng cửa các ngày làm việc T2–T6, và cho phép chạy tay.
+# Đặt NHIỀU mốc (15:20, 16:00, 16:40 giờ VN = 08:20, 09:00, 09:40 UTC) vì cron
+# của GitHub Actions thường bị trễ/bỏ qua khi hệ thống tải cao — mốc này skip thì
+# mốc khác vẫn chạy. Có concurrency group + git diff guard nên chạy lặp lại an toàn,
+# giá không đổi sẽ không tạo commit thừa.
 on:
   schedule:
+    - cron: '20 8 * * 1-5'
     - cron: '0 9 * * 1-5'
+    - cron: '40 9 * * 1-5'
   workflow_dispatch:
 
 # Cho phép job commit & push prices.json về repo.
