@@ -33,7 +33,7 @@
       <div class="row"><label>Lãi suất cho vay</label><input id="pLoanRate" type="number" value="13" step="0.5" min="0"><span class="note">%/năm — mặc định 13%</span></div>
       <div class="row"><label>Lãi ứng trước</label><input id="pAdvRate" type="number" value="13" step="0.5" min="0"><span class="note">%/năm — mặc định 13%</span></div>
       <div class="row"><label>Ngưỡng Call Margin</label><input id="pCall" type="number" value="0.35" step="0.01"><span class="note">Rtt < 35% → Call Margin</span></div>
-      <div class="row"><label>Ngưỡng Force Sell</label><input id="pForce" type="number" value="0.25" step="0.01"><span class="note">Rtt < 25% → bán giải chấp</span></div>
+      <div class="row"><label>Ngưỡng Force Sell</label><input id="pForce" type="number" value="0.30" step="0.01"><span class="note">Rtt < 30% → bán giải chấp</span></div>
       <div class="row"><label>Dư nợ tối đa toàn TK</label><input id="pMaxLoan" type="number" value="81000000000" step="1000000000"><span class="note">Hạn mức OCBS — mặc định 81 tỷ đ</span></div>
       <div class="row"><label>Hạn mức 1 mã</label><div class="calc" style="font-size:13px;color:#2e7d32">✓ Tự động (Phụ lục 1)</div><span class="note">Áp dụng theo từng mã CK</span></div>
     </div>
@@ -242,7 +242,7 @@
       <div class="hint">Xét <b>cả danh mục cổ phiếu cùng giảm giá</b>. Nếu có nhập mã ở mục II → ghép mã mua thêm (theo KL tùy chọn) vào danh mục rồi tính trên danh mục tổng.</div>
       <div class="row"><label><b>% giảm đến Call Margin (35%)</b></label><div class="calc star" id="bPCall">—</div><span class="note">Cả DM CP giảm tới đây → Rtt = 35%</span></div>
       <div class="row"><label>Giá từng mã khi Call</label><div class="calc" id="bPxCall">—</div><span class="note">Giá mỗi mã khi DM giảm tới mức Call</span></div>
-      <div class="row"><label><b>% giảm đến Force Sell (25%)</b></label><div class="calc star" id="bPForce">—</div><span class="note">Cả DM CP giảm tới đây → Rtt = 25%</span></div>
+      <div class="row"><label><b>% giảm đến Force Sell (30%)</b></label><div class="calc star" id="bPForce">—</div><span class="note">Cả DM CP giảm tới đây → Rtt = 30%</span></div>
       <div class="row"><label>Giá từng mã khi Force</label><div class="calc" id="bPxForce">—</div><span class="note">Giá mỗi mã khi DM giảm tới mức Force</span></div>
       <div class="row"><label>Rtt hiện tại (đã ghép)</label><div class="calc" id="bDCall">—</div><span class="note">Rtt của danh mục đang xét</span></div>
       <div class="row"><label>Phạm vi xét</label><div class="calc" id="bDForce">—</div><span class="note">DM hiện tại hay có ghép mã mua thêm</span></div>
@@ -433,6 +433,6 @@
 
 </div>
 
-<script src="app.js?v=20260531-173511"></script>
+<script src="app.js?v=20260601-192205"></script>
 </body>
 </html>

@@ -336,7 +336,7 @@ function recalcAll() {
   }
 
   const cm = +$('pCall').value || 0.35;
-  const fs = +$('pForce').value || 0.25;
+  const fs = +$('pForce').value || 0.30;
   const stEl = $('rStatus');
   let needAlert = false, alertClass = '';
   if (V === 0) { stEl.textContent = '— (nhập danh mục để bắt đầu)'; stEl.className = 'status'; }
@@ -607,7 +607,7 @@ function recalcBuy(V, D, room, cash) {
   const casht = cash - (hasBuy ? cashUsedC : 0);       // tiền mặt còn lại
   const Dt    = D    + (hasBuy ? loanC : 0);           // dư nợ tổng
   const cmCall = +$('pCall').value || 0.35;            // ngưỡng Call (mặc định 35%)
-  const fsForce= +$('pForce').value || 0.25;           // ngưỡng Force (mặc định 25%)
+  const fsForce= +$('pForce').value || 0.30;           // ngưỡng Force (mặc định 30%)
   // x = tỷ lệ giá CP còn lại để Rtt chạm ngưỡng T (≤1 mới có nghĩa: cần giá GIẢM).
   const dropFor = T => {
     if (PVt <= 0) return null;                 // không có CP để giảm
