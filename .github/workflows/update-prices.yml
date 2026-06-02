@@ -53,6 +53,16 @@ jobs:
           else
             DATE=$(python -c "import json;print(json.load(open('docs/prices.json',encoding='utf-8'))['tradingDate'])")
             git commit -m "data: cap nhat gia tham chieu $DATE (tu dong qua Actions)"
-            git push
-            echo "✓ Đã push giá mới."
+            # Retry + rebase: khi nhieu run/nguon push gan nhau (cron GitHub +
+            # cron-job.org + chay tay), remote co the da co commit moi -> push bi
+            # reject (fetch first). Rebase len remote roi push lai, thu toi 5 lan.
+            pushed=0
+            for i in 1 2 3 4 5; do
+              if git push; then echo "✓ Đã push giá mới."; pushed=1; break; fi
+              echo "Push bị reject (lần $i) — pull --rebase rồi thử lại…"
+              git pull --rebase origin main
+            done
+            if [ "$pushed" != "1" ]; then
+              echo "✗ Push thất bại sau 5 lần thử."; exit 1
+            fi
           fi
