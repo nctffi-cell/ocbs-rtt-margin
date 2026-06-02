@@ -5,6 +5,11 @@ name: Cập nhật giá tham chiếu
 # của GitHub Actions thường bị trễ/bỏ qua khi hệ thống tải cao — mốc này skip thì
 # mốc khác vẫn chạy. Có concurrency group + git diff guard nên chạy lặp lại an toàn,
 # giá không đổi sẽ không tạo commit thừa.
+#
+# LƯU Ý: cron GitHub có thể bị delay nhiều giờ (đã gặp run lệch sang 4h sáng hôm
+# sau). Script update_prices_ci.py có guard tự bỏ qua nếu chạy ngoài khung 14h–23h
+# giờ VN, nên dù cron lệch giờ cũng không ghi giá sai thời điểm. workflow_dispatch
+# (chạy tay) luôn bỏ qua guard này.
 on:
   schedule:
     - cron: '20 8 * * 1-5'

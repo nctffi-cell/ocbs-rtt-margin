@@ -94,6 +94,17 @@ def fetch_ssi(sym):
 
 
 def main():
+    # Guard giờ chạy: cron GitHub có thể bị delay nhiều giờ (đã gặp run lệch sang
+    # 4h sáng). Giá tham chiếu chỉ đáng tin sau khi phiên đóng cửa (~15h VN), nên
+    # chỉ ghi khi chạy trong khung 14h–23h giờ VN. Chạy tay (workflow_dispatch)
+    # luôn được phép — để còn cập nhật thủ công khi cần.
+    now = datetime.now(VN_TZ)
+    event = os.environ.get("GITHUB_EVENT_NAME", "").strip()
+    if event == "schedule" and not (14 <= now.hour < 23):
+        log(f"Bỏ qua: cron chạy lúc {now:%H:%M} VN (ngoài khung 14h–23h, có thể do "
+            f"GitHub delay). Giá lúc này không đáng tin → giữ nguyên bản cũ.")
+        return 0
+
     if not os.path.exists(STOCKS_JSON):
         log(f"Không tìm thấy {STOCKS_JSON}")
         return 1
@@ -125,8 +136,15 @@ def main():
         log("Không lấy được giá nào → KHÔNG ghi file (giữ nguyên bản cũ).")
         return 2
 
-    now = datetime.now(VN_TZ)
-    applies = next_business_day(now) if now.hour >= 15 else now
+    # Giá vừa lấy là giá đóng cửa phiên gần nhất → áp dụng cho phiên giao dịch KẾ
+    # TIẾP. Sau 15h (đã đóng cửa) thì là ngày làm việc kế tiếp; trước đó (chỉ xảy ra
+    # khi chạy tay sáng sớm) coi như áp cho chính phiên hôm nay nếu là ngày làm việc.
+    if now.hour >= 15:
+        applies = next_business_day(now)
+    elif now.weekday() < 5:
+        applies = now
+    else:
+        applies = next_business_day(now)
     payload = {
         "updated": now.strftime("%Y-%m-%d %H:%M:%S"),
         "tradingDate": applies.strftime("%Y-%m-%d"),
