@@ -41,16 +41,20 @@
    - (Tùy chọn) thêm job thứ hai lúc **16:30** để chắc chắn — chạy lặp an toàn, giá không đổi sẽ không tạo commit thừa.
 5. Mở mục **Advanced** (hoặc "Headers" / "Request method"):
    - **Request method:** `POST`
-   - **Headers** — thêm 3 dòng:
+   - **Headers** — thêm 4 dòng (nhập riêng Key và Value cho từng dòng):
      | Key | Value |
      |-----|-------|
      | `Accept` | `application/vnd.github+json` |
      | `Authorization` | `Bearer <DÁN_TOKEN_Ở_ĐÂY>` |
      | `X-GitHub-Api-Version` | `2022-11-28` |
-   - **Request body** (bắt buộc với GitHub dispatch API):
-     ```json
+     | `Content-Type` | `application/json` |
+   - **Request body** — nhập CHÍNH XÁC 14 ký tự sau, KHÔNG kèm dấu ``` hay chữ "json":
+     ```
      {"ref":"main"}
      ```
+     ⚠️ Lỗi "non-wellformed job" của cron-job.org thường do dán nhầm cả dòng
+     ```` ```json ```` và ```` ``` ```` (vốn chỉ là cú pháp markdown để hiển thị
+     trong file này) vào ô body. Body chỉ là `{"ref":"main"}` — không gì khác.
 6. Lưu (**Create**).
 
 ---
@@ -62,7 +66,9 @@
   - Nếu **401** → token sai/hết hạn.
   - Nếu **403** → token thiếu quyền Actions: Read and write.
   - Nếu **404** → sai URL (kiểm tra owner/repo/tên file workflow) hoặc token không có quyền trên repo.
-  - Nếu **422** → thiếu/sai body `{"ref":"main"}`.
+  - Nếu **422** → thiếu/sai body `{"ref":"main"}` (đúng ra là `{"ref":"main"}`, không kèm ```).
+  - Nếu cron-job.org báo **"non-wellformed job"** (chưa gửi được request) → body dán nhầm
+    kèm ```` ``` ````/`json`, hoặc thiếu header `Content-Type: application/json`.
 - Sau ~3 phút, vào https://github.com/nctffi-cell/ocbs-rtt-margin/actions xem có run mới (event = `workflow_dispatch`) không.
 
 ---
@@ -76,6 +82,7 @@ curl -s -o /dev/null -w "%{http_code}" -X POST `
   -H "Accept: application/vnd.github+json" `
   -H "Authorization: Bearer $token" `
   -H "X-GitHub-Api-Version: 2022-11-28" `
+  -H "Content-Type: application/json" `
   https://api.github.com/repos/nctffi-cell/ocbs-rtt-margin/actions/workflows/update-prices.yml/dispatches `
   -d '{\"ref\":\"main\"}'
 ```
