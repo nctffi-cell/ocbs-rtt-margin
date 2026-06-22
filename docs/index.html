@@ -18,6 +18,7 @@
   <div class="tab" data-tab="sucmua">💰 Sức mua & Mua CP</div>
   <div class="tab" data-tab="deals">🔁 4 Deals</div>
   <div class="tab" data-tab="muonhang">📦 Mượn hàng</div>
+  <div class="tab" data-tab="chuyen">🔀 Chuyển DM A→B</div>
   <div class="tab" data-tab="caps">⚙️ Giá chặn</div>
 </nav>
 
@@ -384,6 +385,90 @@
     </div>
   </section>
 
+  <!-- ===================== TAB: Chuyển danh mục A→B ===================== -->
+  <section class="panel" data-panel="chuyen">
+    <div class="card">
+      <div class="card-header">📋 GIỚI THIỆU</div>
+      <div class="hint">Chuyển toàn bộ danh mục cổ phiếu từ <b>TK A</b> sang <b>TK B</b> theo phương thức <b>thỏa thuận cùng giá = giá tham chiếu (Pref)</b>. Tính: <b>TK A rút được</b> bao nhiêu, <b>TK B nộp thêm</b> bao nhiêu để đạt Rtt mục tiêu, và <b>top-up NET</b> (tiền user phải bù thêm khi chuyển tiền A→B).</div>
+      <div class="hint">Phí lấy từ Tab 1 — Phí mua = <span id="xFbNote">0.15%</span>, Phí bán + thuế = <span id="xFsNote">0.25%</span>. Pref &amp; tỷ lệ tài sản (ts) tự tra theo mã.</div>
+      <div class="row"><label>Rtt mục tiêu cho TK B (%)</label><input id="xRtt" type="number" value="50" step="1" min="0" max="100"><span class="note">Cuối ngày TK B phải đảm bảo tỷ lệ này — mặc định 50%</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">I. DANH MỤC CHUYỂN A→B (toàn bộ CP của A)</div>
+      <table class="dm" id="tblTransfer" style="min-width:560px">
+        <thead><tr>
+          <th>#</th><th>Mã CK</th><th>Số lượng</th><th>Pref (đ)</th><th>ts</th><th>GT (đ)</th>
+        </tr></thead>
+        <tbody></tbody>
+        <tfoot><tr>
+          <td colspan="5" style="text-align:right;font-weight:700;background:var(--total)">TỔNG GT (Pref)</td>
+          <td class="calc total" id="xTGT">0</td>
+        </tr></tfoot>
+      </table>
+      <div class="row"><label>PV chuyển (đã ×ts)</label><div class="calc" id="xTPV">0</div><span class="note">Cơ sở tính ký quỹ của số CP chuyển</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">II. TK A — BÊN RÚT TIỀN</div>
+      <div class="row"><label>Tiền mặt (đ)</label><input id="xACash" type="text" inputmode="numeric" data-num value="-462,761"><span class="note">Số dư thực, có thể âm (phí lưu ký nằm ở đây)</span></div>
+      <div class="row"><label>Dư nợ gốc (đ)</label><input id="xADebt" type="text" inputmode="numeric" data-num value="21,326,672,274"><span class="note">Dư nợ HĐ ký quỹ</span></div>
+      <div class="row"><label>Lãi vay (đ)</label><input id="xAInt" type="text" inputmode="numeric" data-num value="374,972,809"><span class="note">Lãi HĐ ký quỹ</span></div>
+      <div class="row"><label>Tiền ứng trước (đ)</label><input id="xAAdv" type="text" inputmode="numeric" data-num value="0"><span class="note">Dư nợ ứng trước đã ứng</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">III. DANH MỤC HIỆN CÓ CỦA TK B</div>
+      <div class="hint">Để trống nếu TK B là tài khoản mới (chỉ nhận danh mục).</div>
+      <table class="dm" id="tblBExist" style="min-width:560px">
+        <thead><tr>
+          <th>#</th><th>Mã CK</th><th>Số lượng</th><th>Pref (đ)</th><th>ts</th><th>GT (đ)</th>
+        </tr></thead>
+        <tbody></tbody>
+        <tfoot><tr>
+          <td colspan="5" style="text-align:right;font-weight:700;background:var(--total)">TỔNG GT (Pref)</td>
+          <td class="calc total" id="xBGT">0</td>
+        </tr></tfoot>
+      </table>
+      <div class="row"><label>PV B hiện có (đã ×ts)</label><div class="calc" id="xBPV">0</div><span class="note">Cơ sở ký quỹ danh mục cũ của B</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">IV. TK B — BÊN NHẬN (NỘP THÊM)</div>
+      <div class="row"><label>Tiền mặt (đ)</label><input id="xBCash" type="text" inputmode="numeric" data-num value="-425,691"><span class="note">Số dư thực, có thể âm</span></div>
+      <div class="row"><label>Dư nợ gốc (đ)</label><input id="xBDebt" type="text" inputmode="numeric" data-num value="19,193,099,057"><span class="note">Dư nợ HĐ ký quỹ hiện có</span></div>
+      <div class="row"><label>Lãi vay (đ)</label><input id="xBInt" type="text" inputmode="numeric" data-num value="82,157,047"><span class="note">Lãi HĐ ký quỹ</span></div>
+      <div class="row"><label>Tiền ứng trước (đ)</label><input id="xBAdv" type="text" inputmode="numeric" data-num value="0"><span class="note">Dư nợ ứng trước đã ứng</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">V. KẾT QUẢ</div>
+
+      <div class="row"><label>Sức mua cần để khớp (mua DM A)</label><div class="calc" id="xBuyCost">0</div><span class="note">= GT × (1 + phí mua)</span></div>
+      <div class="row"><label>Vay margin trên CP mới</label><div class="calc" id="xNewLoan">0</div><span class="note">= PV chuyển × (1 − Rtt mục tiêu)</span></div>
+
+      <div class="row" style="margin-top:8px"><label><b>🟦 TK A RÚT ĐƯỢC</b></label><div class="calc star" id="xWithdrawA">0</div><span class="note">Tiền bán ròng − nợ − lãi − ứng trước (gồm tiền mặt)</span></div>
+      <div class="hint" id="xWithdrawABreak"></div>
+
+      <div class="row" style="margin-top:8px"><label><b>🟩 TK B NỘP THÊM</b></label><div class="calc star" id="xDepositB">0</div><span class="note">Để TK B đạt Rtt mục tiêu cuối ngày</span></div>
+      <div class="hint" id="xDepositBBreak"></div>
+
+      <div class="row" style="margin-top:8px"><label><b>💰 TOP-UP NET (user bù thêm)</b></label><div class="calc star" id="xNet" style="font-size:18px">0</div><span class="note">= B nộp − A rút (tiền A chuyển thẳng sang B)</span></div>
+      <div class="hint" id="xNetBreak"></div>
+
+      <div class="status" id="xRttCheck">—</div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">📌 GIẢI THÍCH CÔNG THỨC</div>
+      <div class="hint">• GT = Σ KL × Pref · &nbsp; PV = Σ KL × Pref × ts</div>
+      <div class="hint">• <b>A rút</b> = GT×(1 − phí bán&amp;thuế) + Tiền mặt A − Dư nợ − Lãi − Ứng trước</div>
+      <div class="hint">• <b>B nộp</b> = [Nợ B + Lãi B − Tiền mặt B + Ứng trước B + GT×(1+phí mua)] − (1−Rtt)×PV<sub>tổng</sub></div>
+      <div class="hint">• Rtt mục tiêu T ⇔ nợ ròng = (1 − T) × PV. Tại T=50% → nợ ròng = 50%×PV.</div>
+      <div class="hint">• <b>Top-up NET</b> = B nộp − A rút = phí giao dịch 2 đầu + phần nâng tỷ lệ ký quỹ.</div>
+    </div>
+  </section>
+
   <!-- ========================= TAB 6: Giá chặn ========================= -->
   <section class="panel" data-panel="caps">
     <div class="card">
@@ -433,6 +518,6 @@
 
 </div>
 
-<script src="app.js?v=20260601-192205"></script>
+<script src="app.js?v=20260622-124736"></script>
 </body>
 </html>

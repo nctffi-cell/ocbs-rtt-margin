@@ -78,6 +78,7 @@ $$('.tab').forEach(t => t.onclick = () => {
   if (t.dataset.tab === 'caps') renderCaps();
   if (t.dataset.tab === 'muonhang') recalcMuon();
   if (t.dataset.tab === 'viphm') renderSellTable();
+  if (t.dataset.tab === 'chuyen') recalcTransfer();
 });
 
 // ── Load master + caps ─────────────────────────────────────
@@ -1344,6 +1345,117 @@ async function prefetchMuonPrice() {
   if ($('mPriceNote')) $('mPriceNote').textContent = `Giá tham chiếu: ${fmtVND(p.price)}`;
 }
 
+// ╔════════════════ TAB: Chuyển danh mục A→B ════════════════╗
+//   Chuyển toàn bộ CP từ TK A sang TK B (thỏa thuận cùng giá = Pref).
+//   A bán → rút tiền; B mua → nộp thêm để đạt Rtt mục tiêu; NET = B nộp − A rút.
+const XFER_ROWS = 8;
+function buildXferRows(tblId, preset) {
+  const tb = $(tblId)?.querySelector('tbody'); if (!tb) return;
+  tb.innerHTML = '';
+  for (let i = 0; i < XFER_ROWS; i++) {
+    const p = preset[i] || {};
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${i+1}</td>
+      <td><input type="text" class="xsym" value="${p.sym || ''}" placeholder=""></td>
+      <td><input type="text" inputmode="numeric" data-num class="xqty" value="${p.qty != null ? p.qty : ''}"></td>
+      <td class="calc xpref">—</td>
+      <td class="calc xts">—</td>
+      <td class="calc xgt">0</td>`;
+    tb.appendChild(tr);
+  }
+}
+// Đọc 1 bảng danh mục (chuyển hoặc B-hiện-có): trả về tổng GT (theo Pref) và PV (×ts).
+function readXferTable(tblId) {
+  let GT = 0, PV = 0;
+  $(tblId).querySelectorAll('tbody tr').forEach(tr => {
+    const sym = (tr.querySelector('.xsym').value || '').toUpperCase().trim();
+    const qty = parseNum(tr.querySelector('.xqty').value);
+    const pref = STATE.prices[sym]?.ref ?? STATE.prices[sym]?.price ?? 0;
+    const ts = getTs(sym);
+    const gt = qty * pref, pv = qty * pref * ts;
+    tr.querySelector('.xpref').textContent = pref ? fmtVND(pref) : (sym ? '⚠️ thiếu giá' : '—');
+    tr.querySelector('.xts').textContent = sym ? ts.toFixed(2) : '—';
+    tr.querySelector('.xgt').textContent = fmtVND(gt);
+    if (sym && qty) { GT += gt; PV += pv; }
+  });
+  return { GT, PV };
+}
+function recalcTransfer() {
+  if (!$('tblTransfer')) return;
+  const fb = getFb(), fs = getFs();
+  if ($('xFbNote')) $('xFbNote').textContent = (fb * 100).toFixed(2) + '%';
+  if ($('xFsNote')) $('xFsNote').textContent = (fs * 100).toFixed(2) + '%';
+  const T = Math.min(1, Math.max(0, (+$('xRtt').value || 50) / 100));   // Rtt mục tiêu TK B
+
+  const X  = readXferTable('tblTransfer');   // danh mục chuyển A→B
+  const B0 = readXferTable('tblBExist');     // danh mục B hiện có
+  const GT = X.GT, PV_A = X.PV, PV_B0 = B0.PV;
+  $('xTGT').textContent = fmtVND(GT);
+  $('xTPV').textContent = fmtVND(PV_A);
+  $('xBGT').textContent = fmtVND(B0.GT);
+  $('xBPV').textContent = fmtVND(PV_B0);
+
+  // ── TK A — rút tiền (bán toàn bộ DM tại Pref, chịu phí bán + thuế) ──
+  const aCash = getNumVal('xACash'), aDebt = getNumVal('xADebt'),
+        aInt  = getNumVal('xAInt'),  aAdv  = getNumVal('xAAdv');
+  const sellNet   = GT * (1 - fs);
+  const withdrawA = sellNet + aCash - aDebt - aInt - aAdv;
+
+  // ── TK B — nộp thêm để đạt Rtt = T (mua DM tại Pref, chịu phí mua) ──
+  //   Rtt = T ⇔ nợ ròng = (1−T)×PV.  Nợ ròng = (nợ+lãi) − tiền + ứng + tiền mua.
+  const bCash = getNumVal('xBCash'), bDebt = getNumVal('xBDebt'),
+        bInt  = getNumVal('xBInt'),  bAdv  = getNumVal('xBAdv');
+  const buyCost       = GT * (1 + fb);
+  const PV_Bnew       = PV_B0 + PV_A;
+  const netDebtBefore = bDebt + bInt - bCash + bAdv + buyCost;
+  const reqNetDebt    = (1 - T) * PV_Bnew;
+  const depositB      = netDebtBefore - reqNetDebt;
+  const newLoan       = (1 - T) * PV_A;            // vay margin trên CP mới
+  const ownForBuy     = buyCost - newLoan;          // vốn tự có cho thương vụ mua
+  const fixExisting   = depositB - ownForBuy;       // bù DM cũ của B về Rtt mục tiêu
+
+  const netTopUp = depositB - withdrawA;            // tiền user phải bù thêm
+
+  $('xBuyCost').textContent   = fmtVND(buyCost);
+  $('xNewLoan').textContent   = fmtVND(newLoan);
+  $('xWithdrawA').textContent = fmtVND(withdrawA);
+  $('xDepositB').textContent  = fmtVND(depositB);
+  $('xNet').textContent       = fmtVND(netTopUp);
+
+  $('xWithdrawABreak').textContent =
+    `= bán ròng ${fmtVND(sellNet)} + tiền mặt ${fmtVND(aCash)} − nợ ${fmtVND(aDebt)} − lãi ${fmtVND(aInt)} − ứng ${fmtVND(aAdv)}`;
+  $('xDepositBBreak').textContent =
+    `= vốn tự có mua DM mới ${fmtVND(ownForBuy)} + bù DM cũ của B về Rtt ${(T*100).toFixed(0)}% ${fmtVND(fixExisting)}`;
+  $('xNetBreak').textContent =
+    `gồm: phí bán+thuế A ${fmtVND(GT*fs)} + phí mua B ${fmtVND(GT*fb)} + nâng tỷ lệ ký quỹ ${fmtVND(netTopUp - GT*fs - GT*fb)}`;
+
+  // Kiểm tra Rtt của B sau khi nộp
+  const netAfter = netDebtBefore - depositB;
+  const rttAfter = PV_Bnew > 0 ? (PV_Bnew - netAfter) / PV_Bnew : 0;
+  const el = $('xRttCheck');
+  if (GT > 0) {
+    el.textContent = `✅ Rtt của TK B sau khi nộp = ${fmtPct(rttAfter)} (mục tiêu ${(T*100).toFixed(0)}%)`;
+    el.className = 'status safe';
+  } else {
+    el.textContent = '— (nhập danh mục chuyển ở mục I để tính)';
+    el.className = 'status';
+  }
+}
+function initTransfer() {
+  buildXferRows('tblTransfer', [
+    { sym: 'HAG', qty: 2181400 }, { sym: 'HLD', qty: 179000 },
+    { sym: 'MWG', qty: 72400 },   { sym: 'VIX', qty: 14400 },
+  ]);
+  buildXferRows('tblBExist', [
+    { sym: 'HAG', qty: 1975700 }, { sym: 'MWG', qty: 57800 }, { sym: 'VIX', qty: 220000 },
+  ]);
+  const panel = document.querySelector('.panel[data-panel="chuyen"]');
+  if (panel) panel.addEventListener('input', recalcTransfer);
+  formatNumInputs(panel || document);
+  recalcTransfer();
+}
+
 // ── Init ───────────────────────────────────────────────────
 (async () => {
   await loadMaster();
@@ -1351,6 +1463,7 @@ async function prefetchMuonPrice() {
   await loadPrices();
   initHoldingsTable();
   initMuonDates();
+  initTransfer();
   recalcAll();
   await prefetchDefaultPrices();
   await prefetchMuonPrice();
