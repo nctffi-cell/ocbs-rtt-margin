@@ -1402,7 +1402,11 @@ function recalcTransfer() {
   const aCash = getNumVal('xACash'), aDebt = getNumVal('xADebt'),
         aInt  = getNumVal('xAInt'),  aAdv  = getNumVal('xAAdv');
   const aAdvRate = (+$('xAAdvRate').value || 0) / 100;
-  const aDays    = +$('xADays').value || 0;
+  // Số ngày ứng = ngày LỊCH từ ngày bán → ngày tiền về (gồm cuối tuần/lễ), không phải số phiên.
+  const sellD = parseISODate($('xASellDate').value);
+  const recvD = parseISODate($('xARecvDate').value);
+  const aDays = Math.max(0, daysBetween(sellD, recvD));
+  if ($('xADays')) $('xADays').textContent = aDays + ' ngày';
   const sellNet  = GT * (1 - fs);
   const advFeeA  = sellNet * aAdvRate * aDays / 360;     // phí ứng trước tiền bán chờ về
   const withdrawA = sellNet - advFeeA + aCash - aDebt - aInt - aAdv;
@@ -1456,6 +1460,19 @@ function initTransfer() {
   buildXferRows('tblBExist', [
     { sym: 'HAG', qty: 1975700 }, { sym: 'MWG', qty: 57800 }, { sym: 'VIX', qty: 220000 },
   ]);
+  // Ngày bán = hôm nay; ngày tiền về = T+2 (bỏ qua T7/CN/lễ).
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  if ($('xASellDate')) $('xASellDate').value = toISODate(today);
+  const recv = computeReturnDate(today);
+  if (recv && $('xARecvDate')) $('xARecvDate').value = toISODate(recv);
+  // Đổi ngày bán → tự tính lại ngày tiền về T+2 (có thể sửa tay sau đó).
+  $('xASellDate')?.addEventListener('change', () => {
+    const sd = parseISODate($('xASellDate').value);
+    if (sd) { const r = computeReturnDate(sd); if (r) $('xARecvDate').value = toISODate(r); }
+    recalcTransfer();
+  });
+  $('xARecvDate')?.addEventListener('change', recalcTransfer);
+
   const panel = document.querySelector('.panel[data-panel="chuyen"]');
   if (panel) panel.addEventListener('input', recalcTransfer);
   formatNumInputs(panel || document);
