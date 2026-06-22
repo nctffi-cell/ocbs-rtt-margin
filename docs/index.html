@@ -414,7 +414,10 @@
       <div class="row"><label>Tiền mặt (đ)</label><input id="xACash" type="text" inputmode="numeric" data-num value="-462,761"><span class="note">Số dư thực, có thể âm (phí lưu ký nằm ở đây)</span></div>
       <div class="row"><label>Dư nợ gốc (đ)</label><input id="xADebt" type="text" inputmode="numeric" data-num value="21,326,672,274"><span class="note">Dư nợ HĐ ký quỹ</span></div>
       <div class="row"><label>Lãi vay (đ)</label><input id="xAInt" type="text" inputmode="numeric" data-num value="374,972,809"><span class="note">Lãi HĐ ký quỹ</span></div>
-      <div class="row"><label>Tiền ứng trước (đ)</label><input id="xAAdv" type="text" inputmode="numeric" data-num value="0"><span class="note">Dư nợ ứng trước đã ứng</span></div>
+      <div class="row"><label>Tiền ứng trước (đ)</label><input id="xAAdv" type="text" inputmode="numeric" data-num value="0"><span class="note">Dư nợ ứng trước đã ứng (nợ gốc)</span></div>
+      <div class="row"><label>Lãi ứng trước (%/năm)</label><input id="xAAdvRate" type="number" value="13" step="0.5" min="0"><span class="note">Ứng tiền bán chờ về để trả nợ &amp; rút</span></div>
+      <div class="row"><label>Số ngày tiền về (T+n)</label><input id="xADays" type="number" value="2" step="1" min="0"><span class="note">Mặc định 2 — sửa nếu vướng nghỉ/lễ</span></div>
+      <div class="row"><label><b>Phí ứng trước tiền bán</b></label><div class="calc" id="xAAdvFee">0</div><span class="note">= tiền bán ròng × %/năm × ngày/360</span></div>
     </div>
 
     <div class="card">
@@ -462,7 +465,8 @@
     <div class="card">
       <div class="card-header">📌 GIẢI THÍCH CÔNG THỨC</div>
       <div class="hint">• GT = Σ KL × Pref · &nbsp; PV = Σ KL × Pref × ts</div>
-      <div class="hint">• <b>A rút</b> = GT×(1 − phí bán&amp;thuế) + Tiền mặt A − Dư nợ − Lãi − Ứng trước</div>
+      <div class="hint">• <b>A rút</b> = GT×(1 − phí bán&amp;thuế) − phí ứng tiền bán + Tiền mặt A − Dư nợ − Lãi − Ứng trước gốc</div>
+      <div class="hint">&nbsp;&nbsp;&nbsp;phí ứng tiền bán = GT×(1 − phí bán&amp;thuế) × lãi ứng %/năm × số ngày / 360</div>
       <div class="hint">• <b>B nộp</b> = [Nợ B + Lãi B − Tiền mặt B + Ứng trước B + GT×(1+phí mua)] − (1−Rtt)×PV<sub>tổng</sub></div>
       <div class="hint">• Rtt mục tiêu T ⇔ nợ ròng = (1 − T) × PV. Tại T=50% → nợ ròng = 50%×PV.</div>
       <div class="hint">• <b>Top-up NET</b> = B nộp − A rút = phí giao dịch 2 đầu + phần nâng tỷ lệ ký quỹ.</div>
@@ -518,6 +522,6 @@
 
 </div>
 
-<script src="app.js?v=20260622-124736"></script>
+<script src="app.js?v=20260622-130053"></script>
 </body>
 </html>

@@ -1397,10 +1397,16 @@ function recalcTransfer() {
   $('xBPV').textContent = fmtVND(PV_B0);
 
   // ── TK A — rút tiền (bán toàn bộ DM tại Pref, chịu phí bán + thuế) ──
+  //   Tiền bán về T+n → muốn trả nợ & rút ngay phải ỨNG TRƯỚC toàn bộ tiền bán,
+  //   chịu lãi ứng = tiền bán ròng × %/năm × ngày / 360.
   const aCash = getNumVal('xACash'), aDebt = getNumVal('xADebt'),
         aInt  = getNumVal('xAInt'),  aAdv  = getNumVal('xAAdv');
-  const sellNet   = GT * (1 - fs);
-  const withdrawA = sellNet + aCash - aDebt - aInt - aAdv;
+  const aAdvRate = (+$('xAAdvRate').value || 0) / 100;
+  const aDays    = +$('xADays').value || 0;
+  const sellNet  = GT * (1 - fs);
+  const advFeeA  = sellNet * aAdvRate * aDays / 360;     // phí ứng trước tiền bán chờ về
+  const withdrawA = sellNet - advFeeA + aCash - aDebt - aInt - aAdv;
+  if ($('xAAdvFee')) $('xAAdvFee').textContent = fmtVND(advFeeA);
 
   // ── TK B — nộp thêm để đạt Rtt = T (mua DM tại Pref, chịu phí mua) ──
   //   Rtt = T ⇔ nợ ròng = (1−T)×PV.  Nợ ròng = (nợ+lãi) − tiền + ứng + tiền mua.
@@ -1424,7 +1430,7 @@ function recalcTransfer() {
   $('xNet').textContent       = fmtVND(netTopUp);
 
   $('xWithdrawABreak').textContent =
-    `= bán ròng ${fmtVND(sellNet)} + tiền mặt ${fmtVND(aCash)} − nợ ${fmtVND(aDebt)} − lãi ${fmtVND(aInt)} − ứng ${fmtVND(aAdv)}`;
+    `= bán ròng ${fmtVND(sellNet)} − phí ứng ${fmtVND(advFeeA)} + tiền mặt ${fmtVND(aCash)} − nợ ${fmtVND(aDebt)} − lãi ${fmtVND(aInt)} − ứng gốc ${fmtVND(aAdv)}`;
   $('xDepositBBreak').textContent =
     `= vốn tự có mua DM mới ${fmtVND(ownForBuy)} + bù DM cũ của B về Rtt ${(T*100).toFixed(0)}% ${fmtVND(fixExisting)}`;
   $('xNetBreak').textContent =
