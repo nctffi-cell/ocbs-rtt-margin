@@ -601,12 +601,12 @@ function getStockLimit(sym) {
 }
 // Hiện/ẩn dòng cảnh báo chạm Hạn mức tối đa 1 mã (limit).
 // rowId/warnId: id dòng + ô text. capped: true nếu dư nợ đã bị kẹp. lim: trần. raw: dư nợ trước kẹp.
-function showLimitWarn(rowId, warnId, capped, lim, raw) {
+function showLimitWarn(rowId, warnId, capped, lim, raw, label) {
   const row = $(rowId), warn = $(warnId);
   if (!row || !warn) return;
   if (capped) {
     row.style.display = '';
-    warn.textContent = `Trần ${fmtVND(lim)} (lý thuyết ${fmtVND(raw)})`;
+    warn.textContent = `Trần ${fmtVND(lim)}${label ? ' – ' + label : ''} (lý thuyết ${fmtVND(raw)})`;
   } else {
     row.style.display = 'none';
     warn.textContent = '';
@@ -868,6 +868,8 @@ function recalcAll() {
   recalcBuy(V, D, room, cash);
   recalcDeals();
   renderSellTable();
+  // Tab Chuyển DM A→B cũng dùng ts/tỷ lệ → tính lại luôn cho đồng bộ
+  try { recalcTransfer(); } catch(_) {}
 }
 
 // ── Tab 3 buy section ──────────────────────────────────────
@@ -1144,7 +1146,6 @@ function recalcDeals() {
   const fb   = getFb();
   const fs   = getFs();
   const rp   = Math.min(r, 1 - Rtt);
-  $('dRp').textContent = (rp*100).toFixed(2) + '%';
 
   // Tỷ lệ cho vay HIỆU DỤNG theo mã: rp_eff = min(r, ts×(1−Rtt)).
   //   Dư nợ = V×rp_eff giữ Rtt (CMRp, cô lập) đúng mục tiêu kể cả khi ts<1.
@@ -1154,11 +1155,23 @@ function recalcDeals() {
     const ts = (sym && STATE.master[sym.toUpperCase()]) ? getTs(sym) : 1;
     return Math.min(rr, ts * (1 - Rtt));
   };
+  // Hiển thị r' CHUNG kèm r' THỰC TẾ của từng mã đang dùng trong 4 deal —
+  // vì mã có ts < 1 sẽ bị chặn thấp hơn r' chung, nhìn nhầm rất dễ tính sai.
+  const dealSyms = [...new Set(['d1Sym','d2Sym','d3Sym','d4Sym']
+    .map(id => ($(id)?.value || '').toUpperCase().trim()).filter(x => x && STATE.master[x]))];
+  $('dRp').textContent = (rp*100).toFixed(2) + '%'
+    + (dealSyms.length ? ' · ' + dealSyms.map(x => `${x} ${(rpEff(x)*100).toFixed(0)}%`).join(' · ') : '');
 
   // Phí ứng tiền (lãi ứng trước %/năm × số ngày T+ / 360) — lãi ứng lấy từ THAM SỐ OCBS
   const adv     = getAdvRate();                            // lãi ứng trước (tỷ lệ/năm)
   const advDays = (+$('dAdvDays')?.value || 0);            // số ngày chờ tiền bán về
   const pctAdv  = adv * advDays / 360;                     // tỷ lệ phí ứng theo kỳ
+
+  // Hạn mức áp cho mỗi deal = min(room 1 mã, hạn mức dư nợ toàn tài khoản).
+  // Trước đây chỉ kẹp room 1 mã nên deal có thể vượt HM tài khoản mà không báo.
+  const dealLimit = sym => Math.min(getStockLimit(sym), getMaxLoan());
+  const limLabel  = sym => (getStockLimit(sym) <= getMaxLoan()
+    ? `HM 1 mã ${fmtTy(getStockLimit(sym))}` : `HM tài khoản ${fmtTy(getMaxLoan())}`);
 
   // Deal 1 — chuỗi 4 bước: lưu ký A → mua B → bán B → ứng tiền bán B chờ về để rút.
   //   ① Sức mua sinh từ A = dư nợ tối đa debt1 = V_A·rp1 (kẹp theo hạn mức mã A).
@@ -1174,7 +1187,7 @@ function recalcDeals() {
   const PV1 = V1 * ts1;                // giá trị tài sản đã chiết khấu
   let buyPower1 = V1 * rp1;            // ① sức mua = dư nợ tối đa từ A
   // Kẹp theo Hạn mức tối đa 1 mã: dư nợ phát sinh không vượt limit của mã d1Sym
-  const lim1 = getStockLimit($('d1Sym').value);
+  const lim1 = dealLimit($('d1Sym').value);
   const cap1 = lim1 != null && buyPower1 > lim1;
   if (cap1) buyPower1 = lim1;
   // ② Mua cp B: có giá B → tự tính KL tối đa mua được bằng sức mua (làm tròn lô 100).
@@ -1187,7 +1200,7 @@ function recalcDeals() {
   const feeAdv1  = Vsell1 * pctAdv;    // ④ phí ứng tiền bán B chờ về
   const cash1 = Vsell1 - feeBuy1 - feeSell1 - feeAdv1;   // NET rút được
   const debt1 = Vbuy1;                // dư nợ phát sinh = GT mua B
-  showLimitWarn('d1LimitRow', 'd1LimitWarn', cap1, lim1, V1 * rp1);
+  showLimitWarn('d1LimitRow', 'd1LimitWarn', cap1, lim1, V1 * rp1, limLabel($('d1Sym').value));
   $('d1V').textContent      = fmtVND(V1);
   $('d1X').textContent      = fmtVND(buyPower1);
   $('d1NB').textContent     = fmtNum(NB1);
@@ -1209,7 +1222,7 @@ function recalcDeals() {
   const kNet = 1 - fb - fs - pctAdv;                          // hệ số NET / sức mua
   let buyPower2 = kNet > 0 ? Y / kNet : 0;                    // sức mua cần để rút đủ Y
   // Kẹp theo Hạn mức tối đa 1 mã: sức mua (= dư nợ) không vượt limit của mã A
-  const lim2 = getStockLimit($('d2Sym').value);
+  const lim2 = dealLimit($('d2Sym').value);
   const cap2 = lim2 != null && buyPower2 > lim2;
   if (cap2) buyPower2 = lim2;          // không rút đủ Y bằng 1 mã
   const Vneed2 = rp2 > 0 ? buyPower2 / rp2 : 0;               // GT lưu ký A cần
@@ -1226,7 +1239,7 @@ function recalcDeals() {
   const feeAdv2  = Vsell2 * pctAdv;
   const cash2 = Vsell2 - feeBuy2 - feeSell2 - feeAdv2;        // NET rút thực tế (≳ Y)
   const debt2 = Vbuy2;                                        // dư nợ phát sinh = GT mua B
-  showLimitWarn('d2LimitRow', 'd2LimitWarn', cap2, lim2, (kNet>0 ? Y/kNet : 0));
+  showLimitWarn('d2LimitRow', 'd2LimitWarn', cap2, lim2, (kNet>0 ? Y/kNet : 0), limLabel($('d2Sym').value));
   $('d2BP').textContent     = fmtVND(buyPower2);
   $('d2V').textContent      = fmtVND(Vneed2);
   $('d2N').textContent      = fmtNum(N2);
@@ -1243,7 +1256,7 @@ function recalcDeals() {
   const rp3 = rpEff($('d3Sym').value);
   const Z = getNumVal('d3Z'), P3 = getNumVal('d3P');
   // Kẹp theo Hạn mức tối đa 1 mã: dư nợ mong muốn Z không thể vượt limit bằng 1 mã.
-  const lim3 = getStockLimit($('d3Sym').value);
+  const lim3 = dealLimit($('d3Sym').value);
   const cap3 = lim3 != null && Z > lim3;
   const Zeff = cap3 ? lim3 : Z;        // dư nợ thực tế đạt được
   const Vneed3 = rp3 > 0 ? Zeff / rp3 : 0;
@@ -1252,7 +1265,7 @@ function recalcDeals() {
   let debt3 = Vreal3 * rp3;
   if (lim3 != null && debt3 > lim3) debt3 = lim3;   // N3 tròn lên không vượt trần
   const X3 = debt3 / (1 + fb);
-  showLimitWarn('d3LimitRow', 'd3LimitWarn', cap3, lim3, Z);
+  showLimitWarn('d3LimitRow', 'd3LimitWarn', cap3, lim3, Z, limLabel($('d3Sym').value));
   $('d3V').textContent    = fmtVND(Vneed3);
   $('d3N').textContent    = fmtNum(N3);
   $('d3Cash').textContent = fmtVND(X3 * (1 - fs));
@@ -1271,13 +1284,13 @@ function recalcDeals() {
   const Nmax4 = (perShareCash > 0) ? X4 / perShareCash : 0;
   let N4 = Math.max(0, Math.floor(Nmax4 / 100) * 100);
   // Kẹp theo Hạn mức tối đa 1 mã: dư nợ N4·Pref·rp4 không vượt limit của mã d4Sym
-  const lim4 = getStockLimit($('d4Sym').value);
+  const lim4 = dealLimit($('d4Sym').value);
   const cap4 = lim4 != null && rp4 > 0 && P4ref > 0 && N4 * P4ref * rp4 > lim4;
   if (cap4) {
     const nByLimit = Math.floor(lim4 / (P4ref * rp4) / 100) * 100;
     N4 = Math.max(0, Math.min(N4, nByLimit));
   }
-  showLimitWarn('d4LimitRow', 'd4LimitWarn', cap4, lim4, Math.floor(Nmax4/100)*100 * P4ref * rp4);
+  showLimitWarn('d4LimitRow', 'd4LimitWarn', cap4, lim4, Math.floor(Nmax4/100)*100 * P4ref * rp4, limLabel($('d4Sym').value));
   const Vcost4   = N4 * P4buy;            // chi phí mua (giá đặt)
   const VrefVal4 = N4 * P4ref;            // giá trị stock để tính Rtt (giá TC)
   const debt4    = VrefVal4 * rp4;        // dư nợ vay margin
@@ -1624,7 +1637,10 @@ function renderCaps() {
   let rows = Object.entries(STATE.master).map(([sym, m]) => ({
     sym, name: m.name || '', exch: m.exch || '',
     r: getR(sym),
+    ts: getTs(sym),
+    cls: getClass(sym),
     rEdited:   STATE.overrides[sym]?.r     != null,
+    tsEdited:  STATE.overrides[sym]?.ts    != null,
     limEdited: STATE.overrides[sym]?.limit != null,
     high: STATE.caps[sym]?.high || null,
     low:  STATE.caps[sym]?.low  || null,
@@ -1664,11 +1680,17 @@ function renderCaps() {
       ? row.pl1Cap.toLocaleString('vi-VN')
       : (refPx ? refPx.toLocaleString('vi-VN') : 'giá TC');
     const pl1Tag = row.pl1Cap ? `<span style="font-size:10px;color:#2e7d32" title="PL1: ${row.pl1Cap.toLocaleString('vi-VN')}đ">PL1</span>` : '';
+    const clsTag = row.cls ? `<span class="chip" style="font-size:10px;padding:1px 5px" title="Nhóm chất lượng CP">${row.cls}</span>` : '';
     // Room hiển thị theo tỷ đồng; nếu vượt trần 1 mã thì báo đã bị kẹp
     const roomTy   = row.limit != null ? (row.limit/1e9) : null;
     const capped   = row.limit != null && row.limit > ceiling;
     const roomTxt  = roomTy != null ? `${roomTy.toLocaleString('vi-VN',{maximumFractionDigits:1})} tỷ` : `${fmtTy(ceiling)} (trần)`;
     const editMark = 'background:#FFF2CC;color:#7d6608;font-weight:600';
+    // ts (tỷ lệ tài sản đảm bảo) — vào công thức Rtt: PV = KL × giá × ts
+    const tsCell = adm
+      ? `<input type="number" step="0.1" min="0" max="1" data-sym="${row.sym}" data-f="ts"
+            value="${row.ts}" title="Tỷ lệ TSĐB (0–1). A/E=1 · B=0,8 · C/D=0,6" style="${row.tsEdited ? editMark : ''}">`
+      : `<span style="font-weight:600;color:${row.ts>=1?'#1a5276':'#c0392b'}">${(row.ts*100).toFixed(0)}%${row.tsEdited?' ✏️':''}</span>`;
     // Admin: ô nhập. Người dùng thường: chỉ xem.
     const rCell = adm
       ? `<input type="number" step="0.05" min="0" max="1" data-sym="${row.sym}" data-f="r"
@@ -1685,10 +1707,11 @@ function renderCaps() {
             placeholder="${ph}" style="${val ? editMark : ''}">`
       : `<span style="font-size:12px;color:${val?'#7d6608':'#999'}">${val ? val.toLocaleString('vi-VN') : ph}</span>`;
     tr.innerHTML = `
-      <td style="font-weight:700;color:#1F3864">${row.sym} ${pl1Tag}</td>
+      <td style="font-weight:700;color:#1F3864">${row.sym} ${clsTag} ${pl1Tag}</td>
       <td style="text-align:left;font-size:12px;color:#444">${row.name}</td>
       <td style="text-align:center;font-size:12px">${row.exch}</td>
       <td style="text-align:center">${rCell}</td>
+      <td style="text-align:center">${tsCell}</td>
       <td>${capCell('high', row.high, placeholderHigh)}</td>
       <td>${capCell('low',  row.low,  '—')}</td>
       <td style="text-align:center"${capped ? ' title="Room khai báo vượt trần 1 mã → tính theo trần"' : ''}>${limCell}${capped ? ' <span style="font-size:10px;color:#c0392b">▲trần</span>' : ''}</td>
@@ -1725,8 +1748,8 @@ $('tblCaps').addEventListener('input', e => {
   const t = e.target; if (!t.dataset.sym) return;
   const sym = t.dataset.sym, f = t.dataset.f;
 
-  // ── Admin: tỷ lệ cho vay (r) & room 1 mã (limit, nhập theo TỶ đồng) ──
-  if (f === 'r' || f === 'limit') {
+  // ── Admin: tỷ lệ cho vay (r), ts (TSĐB), room 1 mã (limit, nhập theo TỶ đồng) ──
+  if (f === 'r' || f === 'ts' || f === 'limit') {
     if (!isAdmin()) return;                       // chỉ admin mới ghi được
     const raw = t.value.trim();
     const num = raw === '' ? null : +raw;         // để trống = trả về mặc định PL1
@@ -1734,7 +1757,8 @@ $('tblCaps').addEventListener('input', e => {
     if (val == null) {
       if (STATE.overrides[sym]) {
         delete STATE.overrides[sym][f];
-        if (STATE.overrides[sym].r == null && STATE.overrides[sym].limit == null) delete STATE.overrides[sym];
+        const o = STATE.overrides[sym];
+        if (o.r == null && o.ts == null && o.limit == null) delete STATE.overrides[sym];
       }
       t.style.background = ''; t.style.color = ''; t.style.fontWeight = '';
     } else {
