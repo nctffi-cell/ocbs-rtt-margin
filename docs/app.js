@@ -6,16 +6,24 @@
 const STATE = {
   master: {},        // {SYM: {name, exch, r, ts}}
   caps:   {},        // {SYM: {high, low}}
+  overrides: {},     // {SYM: {r, limit}} — admin chỉnh tỷ lệ cho vay & room 1 mã
   prices: {},        // {SYM: {price, change, changePct}}
   holdings: [],      // 10 rows: {sym, qty, price, capUsed, r}
 };
+
+// Hạn mức mặc định (OCBS): toàn tài khoản 90 tỷ, trần 1 mã 300 tỷ.
+const DEF_MAX_LOAN  =  90e9;
+const DEF_MAX_STOCK = 300e9;
 
 const fmtVND = n => (n==null || isNaN(n)) ? '—' : Math.round(n).toLocaleString('vi-VN');
 const getFb       = () => (+$('pFb').value       || 0.15) / 100;
 const getFs       = () => getFb() + 0.001;
 const getLoanRate = () => (+($('pLoanRate')?.value) || 13) / 100;   // lãi vay %/năm → tỷ lệ
 const getAdvRate  = () => (+($('pAdvRate')?.value)  || 13) / 100;   // lãi ứng trước %/năm → tỷ lệ
-const getMaxLoan  = () => +($('pMaxLoan')?.value)   || 81e9;
+const getMaxLoan  = () => +($('pMaxLoan')?.value)   || DEF_MAX_LOAN;
+// Trần dư nợ tối đa cho 1 mã — kẹp lên trên room từng mã (PL1 / admin chỉnh).
+const getMaxStock = () => +($('pMaxStock')?.value)  || DEF_MAX_STOCK;
+const fmtTy = n => (n==null || isNaN(n)) ? '—' : (n/1e9).toLocaleString('vi-VN', {maximumFractionDigits:1}) + ' tỷ';
 const fmtPct = n => (n==null || isNaN(n)) ? '—' : (n*100).toFixed(2) + '%';
 const fmtNum = n => (n==null || isNaN(n)) ? '—' : Math.round(n).toLocaleString('vi-VN');
 const $  = id => document.getElementById(id);
@@ -94,16 +102,133 @@ async function loadMaster() {
   $('hdrInfo').textContent = `${d.count || 0} mã CK · cập nhật ${d.updated || '—'}`;
 }
 async function loadCaps() {
+  let base = {};
   for (const url of ['/api/caps', 'caps.json']) {
-    try { const r = await fetch(url); if (r.ok) { STATE.caps = await r.json(); return; } } catch(_) {}
+    try { const r = await fetch(url); if (r.ok) { base = await r.json(); break; } } catch(_) {}
   }
-  STATE.caps = {};
+  let local = {};
+  try { local = JSON.parse(localStorage.getItem(LS_CAPS) || '{}'); } catch(_) {}
+  STATE.caps = Object.assign({}, base, local);
 }
 async function saveCaps() {
-  await fetch('/api/caps', {method:'POST', headers:{'content-type':'application/json'},
-    body: JSON.stringify(STATE.caps)});
-  $('capInfo').textContent = `✓ Đã lưu ${Object.keys(STATE.caps).length} mã`;
+  let ok = false;
+  try {
+    const r = await fetch('/api/caps', {method:'POST', headers:{'content-type':'application/json'},
+      body: JSON.stringify(STATE.caps)});
+    ok = r.ok;
+  } catch(_) {}
+  try { localStorage.setItem(LS_CAPS, JSON.stringify(STATE.caps)); } catch(_) {}
+  $('capInfo').textContent = ok
+    ? `✓ Đã lưu ${Object.keys(STATE.caps).length} mã lên server`
+    : `✓ Đã lưu ${Object.keys(STATE.caps).length} mã (trên trình duyệt này)`;
   setTimeout(()=>$('capInfo').textContent='', 3000);
+}
+
+// ── Overrides: tỷ lệ cho vay (r) & room (HM 1 mã) do ADMIN chỉnh ──
+// Thứ tự ưu tiên: overrides (admin) → master list (Phụ lục 1).
+// Lưu: server /api/overrides nếu có (chạy server.py), luôn kèm localStorage
+// để bản GitHub Pages tĩnh vẫn giữ được chỉnh sửa trên máy admin.
+const LS_ADMIN = 'ocbs_admin_session';
+const LS_OVR   = 'ocbs_overrides';
+const LS_CAPS  = 'ocbs_caps';
+const LS_LIMIT = 'ocbs_limits';
+
+async function loadOverrides() {
+  let base = {};
+  for (const url of ['/api/overrides', 'overrides.json']) {
+    try { const r = await fetch(url); if (r.ok) { base = await r.json(); break; } } catch(_) {}
+  }
+  let local = {};
+  try { local = JSON.parse(localStorage.getItem(LS_OVR) || '{}'); } catch(_) {}
+  STATE.overrides = Object.assign({}, base, local);
+}
+async function saveOverrides() {
+  let ok = false;
+  try {
+    const r = await fetch('/api/overrides', {method:'POST', headers:{'content-type':'application/json'},
+      body: JSON.stringify(STATE.overrides)});
+    ok = r.ok;
+  } catch(_) {}
+  try { localStorage.setItem(LS_OVR, JSON.stringify(STATE.overrides)); } catch(_) {}
+  const n = Object.keys(STATE.overrides).length;
+  $('capInfo').textContent = ok
+    ? `✓ Đã lưu ${n} mã (tỷ lệ/room) lên server`
+    : `✓ Đã lưu ${n} mã (tỷ lệ/room) trên trình duyệt này — bấm "Xuất file JSON" để đưa lên web cho mọi người`;
+  setTimeout(()=>$('capInfo').textContent='', 5000);
+}
+function exportOverrides() {
+  const blob = new Blob([JSON.stringify(STATE.overrides, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'overrides.json';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+// Hạn mức tối đa (TK & 1 mã) — lưu cục bộ để lần sau vào web vẫn giữ
+function loadLimits() {
+  let d = null;
+  try { d = JSON.parse(localStorage.getItem(LS_LIMIT) || 'null'); } catch(_) {}
+  if (!d) return;
+  if (d.maxLoan  && $('pMaxLoan'))  $('pMaxLoan').value  = d.maxLoan;
+  if (d.maxStock && $('pMaxStock')) $('pMaxStock').value = d.maxStock;
+}
+function saveLimits() {
+  try { localStorage.setItem(LS_LIMIT, JSON.stringify({maxLoan:getMaxLoan(), maxStock:getMaxStock()})); } catch(_) {}
+}
+// Cập nhật các nhãn "90 tỷ" / "300 tỷ" trong ghi chú theo giá trị đang đặt
+function refreshLimitLabels() {
+  $$('.hm-acct').forEach(el  => el.textContent = fmtTy(getMaxLoan()));
+  $$('.hm-stock').forEach(el => el.textContent = fmtTy(getMaxStock()));
+}
+
+// ╔════════════════ QUYỀN ADMIN ═══════════════════════════════╗
+// Đăng nhập gate giao diện: mở khoá ô sửa tỷ lệ / room / hạn mức.
+// LƯU Ý: đây là trang tĩnh nên đây chỉ là khoá GIAO DIỆN, không phải
+// bảo mật server — ai xem source vẫn suy ra được. Đừng dùng mật khẩu thật.
+const ADMIN_HASH = '8c1ff3a8706fa117cd3c7f863895ea8e14849a0e317b6d634ac9420f1c08ca91';
+const ADMIN_TTL  = 8 * 3600 * 1000;   // phiên đăng nhập 8 giờ
+
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+function isAdmin() {
+  try {
+    const s = JSON.parse(localStorage.getItem(LS_ADMIN) || 'null');
+    return !!(s && s.exp > Date.now());
+  } catch(_) { return false; }
+}
+function applyAdminUI() {
+  const on = isAdmin();
+  $('adminBadge').style.display = on ? '' : 'none';
+  $('btnAdmin').textContent = on ? '🚪 Thoát admin' : '🔒 Admin';
+  $$('[data-admin]').forEach(el => { el.disabled = !on; });
+  $$('.admin-only').forEach(el => { el.style.display = on ? '' : 'none'; });
+  if (typeof renderCaps === 'function' && document.querySelector('.panel[data-panel="caps"]')?.classList.contains('active')) renderCaps();
+}
+async function doLogin() {
+  const u = ($('admUser').value || '').trim();
+  const p = $('admPass').value || '';
+  const h = await sha256(`${u}:${p}`);
+  if (h !== ADMIN_HASH) { $('admErr').textContent = '❌ Sai tên đăng nhập hoặc mật khẩu'; return; }
+  localStorage.setItem(LS_ADMIN, JSON.stringify({u, exp: Date.now() + ADMIN_TTL}));
+  $('admErr').textContent = '';
+  $('admPass').value = '';
+  $('loginModal').classList.remove('open');
+  applyAdminUI();
+}
+function wireAdmin() {
+  $('btnAdmin').onclick = () => {
+    if (isAdmin()) { localStorage.removeItem(LS_ADMIN); applyAdminUI(); return; }
+    $('admErr').textContent = '';
+    $('loginModal').classList.add('open');
+    setTimeout(() => $('admUser').focus(), 50);
+  };
+  $('admLogin').onclick  = doLogin;
+  $('admCancel').onclick = () => $('loginModal').classList.remove('open');
+  $('loginModal').onclick = e => { if (e.target.id === 'loginModal') $('loginModal').classList.remove('open'); };
+  ['admUser','admPass'].forEach(id => $(id).addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); }));
+  applyAdminUI();
 }
 
 // ── Giá tham chiếu hôm nay (đọc từ prices.json, cập nhật 1 lần/ngày) ─
@@ -133,7 +258,10 @@ async function fetchPrice(sym) {
 // Tỷ lệ cho vay margin. Mã NGOÀI danh mục ký quỹ (không có trong master) → r = 0
 // (không được vay, phải mua 100% bằng tiền/vốn tự có).
 function getR(sym) {
-  const m = STATE.master[(sym||'').toUpperCase()];
+  const s = (sym||'').toUpperCase();
+  const o = STATE.overrides[s];                       // admin chỉnh tỷ lệ → ưu tiên
+  if (o && o.r != null) return o.r;
+  const m = STATE.master[s];
   return m ? m.r : 0;
 }
 // Tỷ lệ tài sản (ts) = TL tài sản SM của Excel — dùng để CHIẾT KHẤU giá trị CK khi
@@ -153,9 +281,19 @@ function getCapHigh(sym) {
   const m = STATE.master[s];
   return (m && m.cap) ? m.cap : null;
 }
-function getStockLimit(sym) {
-  const m = STATE.master[(sym||'').toUpperCase()];
+// Room (HM dư nợ tối đa) của 1 mã = min(room riêng của mã, trần 1 mã).
+// Room riêng: admin chỉnh (overrides) → Phụ lục 1 (master.limit) → không có thì lấy luôn trần.
+function getStockRoomRaw(sym) {
+  const s = (sym||'').toUpperCase();
+  const o = STATE.overrides[s];
+  if (o && o.limit != null) return o.limit;
+  const m = STATE.master[s];
   return (m && m.limit) ? m.limit : null;
+}
+function getStockLimit(sym) {
+  const raw = getStockRoomRaw(sym);
+  const ceil = getMaxStock();
+  return (raw != null) ? Math.min(raw, ceil) : ceil;
 }
 // Hiện/ẩn dòng cảnh báo chạm Hạn mức tối đa 1 mã (limit).
 // rowId/warnId: id dòng + ô text. capped: true nếu dư nợ đã bị kẹp. lim: trần. raw: dư nợ trước kẹp.
@@ -466,7 +604,7 @@ function recalcBuy(V, D, room, cash) {
     bpEquity = bpFor(0);                                // sức mua khi chỉ dùng dư ký quỹ (cash=0)
     bpBeforeLimit = bpFor(cash);                        // sức mua có tính tiền mặt
     bpCashAdd = Math.max(0, bpBeforeLimit - bpEquity);  // phần tăng thêm nhờ tiền mặt
-    // Kẹp hạn mức dư nợ: nợ phát sinh = GT − cash ≤ min(HM 1 mã, HM tài khoản 81 tỷ).
+    // Kẹp hạn mức dư nợ: nợ phát sinh = GT − cash ≤ min(HM 1 mã, HM tài khoản).
     loanCap  = (lim != null) ? Math.min(acctRoom, lim) : acctRoom;
     bpByLoan = loanCap + cash;                          // GT tối đa để nợ ≤ loanCap
     bpStock  = (lim != null) ? lim + cash : Infinity;
@@ -488,7 +626,7 @@ function recalcBuy(V, D, room, cash) {
   const constraints = [
     { v: bpBeforeLimit, name: 'Dư ký quỹ (EE) + tiền mặt' },
     { v: bpStock,       name: 'HM 1 mã (Phụ lục 1)' },
-    { v: bpAcct,        name: 'HM tài khoản (81 tỷ)' },
+    { v: bpAcct,        name: `HM tài khoản (${fmtTy(getMaxLoan())})` },
   ].sort((a, b) => a.v - b.v);
   const boundBy = isFinite(constraints[0].v) ? constraints[0].name : '—';
 
@@ -551,16 +689,16 @@ function recalcBuy(V, D, room, cash) {
     bpEl.style.color = '';
   }
 
-  // (2) Kiểm tra hạn mức NỢ: HM 1 mã hoặc HM tài khoản 81 tỷ.
+  // (2) Kiểm tra hạn mức NỢ: HM 1 mã hoặc HM tài khoản.
   const overStock = lim != null && loanC > lim + 1;
   const overAcct  = (D + loanC) > getMaxLoan() + 1;
   const rcEl = $('bcRoomChk');
   if (overStock && overAcct) {
-    rcEl.textContent = `❌ Vượt cả HM 1 mã & HM 81 tỷ`;
+    rcEl.textContent = `❌ Vượt cả HM 1 mã & HM tài khoản (${fmtTy(getMaxLoan())})`;
   } else if (overStock) {
     rcEl.textContent = `❌ Vượt HM 1 mã ${fmtVND(loanC - lim)} đ`;
   } else if (overAcct) {
-    rcEl.textContent = `❌ Vượt HM 81 tỷ ${fmtVND((D + loanC) - getMaxLoan())} đ`;
+    rcEl.textContent = `❌ Vượt HM tài khoản (${fmtTy(getMaxLoan())}) ${fmtVND((D + loanC) - getMaxLoan())} đ`;
   } else {
     rcEl.textContent = '✅ Trong hạn mức nợ';
   }
@@ -593,7 +731,7 @@ function recalcBuy(V, D, room, cash) {
   const wantOverAcct  = (D + loanWant) > getMaxLoan() + 1;
   $('bRoomCheck').textContent = (!wantOverStock && !wantOverAcct)
     ? '✅ Trong hạn mức'
-    : (wantOverStock ? '❌ Vượt HM 1 mã' : '❌ Vượt HM 81 tỷ');
+    : (wantOverStock ? '❌ Vượt HM 1 mã' : `❌ Vượt HM tài khoản (${fmtTy(getMaxLoan())})`);
   $('bDeposit').textContent  = fmtVND(deposit);
 
   // Section IV: CẢ DANH MỤC giảm bao nhiêu % thì Call/Force?
@@ -1163,19 +1301,23 @@ function renderCaps() {
   const filter = $('capFilter')?.value || 'all';
   const exch   = $('capExch')?.value  || '';
 
-  // Build rows from full master list
+  // Build rows from full master list (tỷ lệ & room lấy theo overrides của admin nếu có)
   let rows = Object.entries(STATE.master).map(([sym, m]) => ({
-    sym, name: m.name || '', exch: m.exch || '', r: m.r ?? 0.5,
+    sym, name: m.name || '', exch: m.exch || '',
+    r: getR(sym),
+    rEdited:   STATE.overrides[sym]?.r     != null,
+    limEdited: STATE.overrides[sym]?.limit != null,
     high: STATE.caps[sym]?.high || null,
     low:  STATE.caps[sym]?.low  || null,
     pl1Cap: m.cap || null,
-    limit:  m.limit || null,
+    limit:  getStockRoomRaw(sym),
   }));
 
   // Filter
   if (search) rows = rows.filter(r => r.sym.includes(search) || r.name.toUpperCase().includes(search));
   if (filter === 'capped') rows = rows.filter(r => r.high || r.low || r.pl1Cap);
   if (filter === 'nocap')  rows = rows.filter(r => !r.high && !r.low && !r.pl1Cap);
+  if (filter === 'edited') rows = rows.filter(r => r.rEdited || r.limEdited);
   if (exch) rows = rows.filter(r => r.exch === exch);
 
   // Sort
@@ -1191,6 +1333,9 @@ function renderCaps() {
   const total = rows.length;
   const show  = rows.slice(0, 200);
 
+  const adm     = isAdmin();
+  const ceiling = getMaxStock();
+
   tb.innerHTML = '';
   const frag = document.createDocumentFragment();
   for (const row of show) {
@@ -1200,24 +1345,39 @@ function renderCaps() {
       ? row.pl1Cap.toLocaleString('vi-VN')
       : (refPx ? refPx.toLocaleString('vi-VN') : 'giá TC');
     const pl1Tag = row.pl1Cap ? `<span style="font-size:10px;color:#2e7d32" title="PL1: ${row.pl1Cap.toLocaleString('vi-VN')}đ">PL1</span>` : '';
-    const limTxt = row.limit ? `${(row.limit/1e9).toFixed(0)} tỷ` : '—';
+    // Room hiển thị theo tỷ đồng; nếu vượt trần 1 mã thì báo đã bị kẹp
+    const roomTy   = row.limit != null ? (row.limit/1e9) : null;
+    const capped   = row.limit != null && row.limit > ceiling;
+    const roomTxt  = roomTy != null ? `${roomTy.toLocaleString('vi-VN',{maximumFractionDigits:1})} tỷ` : `${fmtTy(ceiling)} (trần)`;
+    const editMark = 'background:#FFF2CC;color:#7d6608;font-weight:600';
+    // Admin: ô nhập. Người dùng thường: chỉ xem.
+    const rCell = adm
+      ? `<input type="number" step="0.05" min="0" max="1" data-sym="${row.sym}" data-f="r"
+            value="${row.r}" title="Tỷ lệ cho vay (0–1)" style="${row.rEdited ? editMark : ''}">`
+      : `<span style="font-weight:600;color:${row.r>=0.5?'#1a5276':'#7d6608'}">${(row.r*100).toFixed(0)}%${row.rEdited?' ✏️':''}</span>`;
+    const limCell = adm
+      ? `<input type="number" step="1" min="0" data-sym="${row.sym}" data-f="limit"
+            value="${roomTy != null ? roomTy : ''}" placeholder="${(ceiling/1e9).toFixed(0)}"
+            title="Room 1 mã, đơn vị TỶ đồng (trần ${fmtTy(ceiling)})" style="${row.limEdited ? editMark : ''}">`
+      : `<span style="font-size:12px;color:${capped?'#c0392b':'#666'}">${roomTxt}${row.limEdited?' ✏️':''}</span>`;
     tr.innerHTML = `
       <td style="font-weight:700;color:#1F3864">${row.sym} ${pl1Tag}</td>
       <td style="text-align:left;font-size:12px;color:#444">${row.name}</td>
       <td style="text-align:center;font-size:12px">${row.exch}</td>
-      <td style="text-align:center;font-weight:600;color:${row.r>=0.5?'#1a5276':'#7d6608'}">${(row.r*100).toFixed(0)}%</td>
+      <td style="text-align:center">${rCell}</td>
       <td><input type="number" data-sym="${row.sym}" data-f="high" value="${row.high||''}"
-          placeholder="${placeholderHigh}" style="${row.high ? 'background:#FFF2CC;color:#7d6608;font-weight:600' : ''}"></td>
+          placeholder="${placeholderHigh}" style="${row.high ? editMark : ''}"></td>
       <td><input type="number" data-sym="${row.sym}" data-f="low"  value="${row.low||''}"
-          placeholder="—" style="${row.low  ? 'background:#FFF2CC;color:#7d6608;font-weight:600' : ''}"></td>
-      <td style="text-align:center;font-size:12px;color:#666">${limTxt}</td>
+          placeholder="—" style="${row.low  ? editMark : ''}"></td>
+      <td style="text-align:center"${capped ? ' title="Room khai báo vượt trần 1 mã → tính theo trần"' : ''}>${limCell}${capped ? ' <span style="font-size:10px;color:#c0392b">▲trần</span>' : ''}</td>
     `;
     frag.appendChild(tr);
   }
   tb.appendChild(frag);
 
   const cappedCount = Object.keys(STATE.caps).length;
-  $('capInfo').textContent = `${cappedCount} mã đã có giá chặn`;
+  const ovCount     = Object.keys(STATE.overrides).length;
+  $('capInfo').textContent = `${cappedCount} mã có giá chặn` + (ovCount ? ` · ${ovCount} mã admin đã chỉnh` : '');
   if ($('listCount')) $('listCount').textContent = Object.keys(STATE.master).length;
   if ($('capPageInfo')) {
     $('capPageInfo').textContent = total > 200
@@ -1242,6 +1402,30 @@ $('tblCaps').querySelector('thead').addEventListener('click', e => {
 $('tblCaps').addEventListener('input', e => {
   const t = e.target; if (!t.dataset.sym) return;
   const sym = t.dataset.sym, f = t.dataset.f;
+
+  // ── Admin: tỷ lệ cho vay (r) & room 1 mã (limit, nhập theo TỶ đồng) ──
+  if (f === 'r' || f === 'limit') {
+    if (!isAdmin()) return;                       // chỉ admin mới ghi được
+    const raw = t.value.trim();
+    const num = raw === '' ? null : +raw;         // để trống = trả về mặc định PL1
+    const val = (num == null || isNaN(num)) ? null : (f === 'limit' ? num * 1e9 : num);
+    if (val == null) {
+      if (STATE.overrides[sym]) {
+        delete STATE.overrides[sym][f];
+        if (STATE.overrides[sym].r == null && STATE.overrides[sym].limit == null) delete STATE.overrides[sym];
+      }
+      t.style.background = ''; t.style.color = ''; t.style.fontWeight = '';
+    } else {
+      STATE.overrides[sym] = STATE.overrides[sym] || {};
+      STATE.overrides[sym][f] = val;
+      t.style.background = '#FFF2CC'; t.style.color = '#7d6608'; t.style.fontWeight = '600';
+    }
+    const ovN = Object.keys(STATE.overrides).length;
+    $('capInfo').textContent = `${ovN} mã admin đã chỉnh — nhớ bấm 💾 Lưu tỷ lệ & room`;
+    recalcAll();
+    return;
+  }
+
   const val = +t.value || null;
   if (val) {
     STATE.caps[sym] = STATE.caps[sym] || {};
@@ -1261,11 +1445,27 @@ $('capSave').onclick = saveCaps;
 $('capSearch').oninput = renderCaps;
 $('capFilter').oninput = renderCaps;
 $('capExch').oninput   = renderCaps;
+if ($('ovSave'))   $('ovSave').onclick   = saveOverrides;
+if ($('ovExport')) $('ovExport').onclick = exportOverrides;
+if ($('ovReset'))  $('ovReset').onclick  = () => {
+  if (!isAdmin()) return;
+  if (!confirm('Xoá toàn bộ tỷ lệ & room admin đã chỉnh, quay về mặc định Phụ lục 1?')) return;
+  STATE.overrides = {};
+  try { localStorage.removeItem(LS_OVR); } catch(_) {}
+  saveOverrides();
+  renderCaps(); recalcAll();
+};
 
 // ── Wire general inputs ────────────────────────────────────
-['aCash','aDebt','aInt','pFb','pLoanRate','pAdvRate','pCall','pForce','pMaxLoan','bSym','bPrice','bQtyWant','bQtyChoose',
+['aCash','aDebt','aInt','pFb','pLoanRate','pAdvRate','pCall','pForce','pMaxLoan','pMaxStock','bSym','bPrice','bQtyWant','bQtyChoose',
  'dR','dRtt','dAdvDays','d1N','d1P','d1PB','d2Y','d2P','d2PB','d3Z','d3P','d4X','d4P','d4Pbuy']
 .forEach(id => { const el = $(id); if (el) el.addEventListener('input', recalcAll); });
+
+// Hạn mức tối đa (admin) — lưu lại & cập nhật nhãn ghi chú
+['pMaxLoan','pMaxStock'].forEach(id => {
+  const el = $(id); if (!el) return;
+  el.addEventListener('input', () => { saveLimits(); refreshLimitLabels(); });
+});
 
 ['d1Sym','d1SymB','d2Sym','d2SymB','d3Sym','d4Sym'].forEach(id => $(id).addEventListener('change', onDealSymBlur));
 $('bSym').addEventListener('change', onBuySymBlur);
@@ -1481,8 +1681,12 @@ function initTransfer() {
 
 // ── Init ───────────────────────────────────────────────────
 (async () => {
+  loadLimits();
+  refreshLimitLabels();
+  wireAdmin();
   await loadMaster();
   await loadCaps();
+  await loadOverrides();
   await loadPrices();
   initHoldingsTable();
   initMuonDates();

@@ -4,13 +4,34 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>OCBS Margin Calculator</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=20260817-095048">
 </head>
 <body>
 <header>
   <h1>📊 OCBS Margin Calculator</h1>
   <span class="sub" id="hdrInfo">Đang tải master list…</span>
+  <span id="adminBadge" class="admin-badge" style="display:none">🔓 ADMIN</span>
+  <button class="btn sm admin-btn" id="btnAdmin">🔒 Admin</button>
 </header>
+
+<!-- ===== Modal đăng nhập admin ===== -->
+<div class="modal-bg" id="loginModal">
+  <div class="modal">
+    <div class="modal-head">🔒 ĐĂNG NHẬP ADMIN</div>
+    <div class="modal-body">
+      <div class="hint" style="margin:0 0 10px">Quyền admin cho phép chỉnh <b>tỷ lệ cho vay</b>, <b>room (HM 1 mã)</b> và các hạn mức tối đa.</div>
+      <label class="modal-lbl">Tên đăng nhập</label>
+      <input type="text" id="admUser" autocomplete="username" placeholder="ID">
+      <label class="modal-lbl">Mật khẩu</label>
+      <input type="password" id="admPass" autocomplete="current-password" placeholder="Mật khẩu">
+      <div id="admErr" class="modal-err"></div>
+      <div class="modal-actions">
+        <button class="btn" id="admLogin">Đăng nhập</button>
+        <button class="btn sm" id="admCancel" style="background:#90a4ae">Đóng</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <nav class="tabs">
   <div class="tab active" data-tab="rtt">🧮 Rtt & Danh mục</div>
@@ -19,7 +40,7 @@
   <div class="tab" data-tab="deals">🔁 4 Deals</div>
   <div class="tab" data-tab="muonhang">📦 Mượn hàng</div>
   <div class="tab" data-tab="chuyen">🔀 Chuyển DM A→B</div>
-  <div class="tab" data-tab="caps">⚙️ Giá chặn</div>
+  <div class="tab" data-tab="caps">⚙️ Giá chặn &amp; Room</div>
 </nav>
 
 <div class="container">
@@ -35,8 +56,9 @@
       <div class="row"><label>Lãi ứng trước</label><input id="pAdvRate" type="number" value="13" step="0.5" min="0"><span class="note">%/năm — mặc định 13%</span></div>
       <div class="row"><label>Ngưỡng Call Margin</label><input id="pCall" type="number" value="0.35" step="0.01"><span class="note">Rtt < 35% → Call Margin</span></div>
       <div class="row"><label>Ngưỡng Force Sell</label><input id="pForce" type="number" value="0.30" step="0.01"><span class="note">Rtt < 30% → bán giải chấp</span></div>
-      <div class="row"><label>Dư nợ tối đa toàn TK</label><input id="pMaxLoan" type="number" value="81000000000" step="1000000000"><span class="note">Hạn mức OCBS — mặc định 81 tỷ đ</span></div>
-      <div class="row"><label>Hạn mức 1 mã</label><div class="calc" style="font-size:13px;color:#2e7d32">✓ Tự động (Phụ lục 1)</div><span class="note">Áp dụng theo từng mã CK</span></div>
+      <div class="row"><label>Dư nợ tối đa toàn TK</label><input id="pMaxLoan" type="number" value="90000000000" step="1000000000" data-admin><span class="note">Hạn mức OCBS — mặc định 90 tỷ đ <span class="lock-tag">🔒 admin</span></span></div>
+      <div class="row"><label>Hạn mức tối đa 1 mã</label><input id="pMaxStock" type="number" value="300000000000" step="10000000000" data-admin><span class="note">Trần tối đa 1 mã — mặc định 300 tỷ đ <span class="lock-tag">🔒 admin</span></span></div>
+      <div class="row"><label>HM 1 mã áp dụng</label><div class="calc" style="font-size:13px;color:#2e7d32">✓ min(Room từng mã, trần 1 mã)</div><span class="note">Room lấy theo Phụ lục 1 / admin chỉnh ở tab ⚙️ Giá chặn &amp; Room</span></div>
     </div>
 
     <div class="card">
@@ -78,7 +100,7 @@
       <div class="row"><label><b>Vốn chủ E = V − D</b></label><div class="calc total" id="rE">0</div><span></span></div>
       <div class="row"><label><b>Tỷ lệ Rtt = E / V</b></label><div class="calc star" id="rRtt">—</div><span></span></div>
       <div class="row"><label>Vốn chủ còn lại (đệm Rtt 50%)</label><div class="calc" id="rEE">0</div><span class="note">= E − 50%×V — phần vốn chủ chưa dùng, còn vay margin tiếp được</span></div>
-      <div class="row"><label>Còn lại đến hạn mức TK</label><div class="calc" id="rLoanRoom">0</div><span class="note">= HM tối đa TK (81 tỷ) − D</span></div>
+      <div class="row"><label>Còn lại đến hạn mức TK</label><div class="calc" id="rLoanRoom">0</div><span class="note">= HM tối đa TK (<span class="hm-acct">90 tỷ</span>) − D</span></div>
       <div class="status" id="rStatus">—</div>
 
       <!-- Panel cảnh báo – chỉ hiện khi Call Margin / Force Sell -->
@@ -196,7 +218,7 @@
       <div class="row"><label>Rtt hiện tại</label><div class="calc" id="bRtt">—</div><span></span></div>
       <div class="row"><label>Vốn chủ E (V − D)</label><div class="calc" id="bDmax">0</div><span class="note">Tài sản ròng hiện có</span></div>
       <div class="row"><label>Vốn chủ còn lại (đệm Rtt 50%) = EE</label><div class="calc" id="bEE">0</div><span class="note">= E − 50%×V — dư ký quỹ, còn vay margin tiếp được</span></div>
-      <div class="row"><label>Còn lại đến HM tài khoản</label><div class="calc" id="bRoom">0</div><span class="note">= 81 tỷ − D</span></div>
+      <div class="row"><label>Còn lại đến HM tài khoản</label><div class="calc" id="bRoom">0</div><span class="note">= <span class="hm-acct">90 tỷ</span> − D</span></div>
       <div class="row"><label>Tiền mặt hiện có (M)</label><div class="calc" id="bM">0</div><span></span></div>
     </div>
 
@@ -207,9 +229,9 @@
       <div class="row"><label>T.lệ Margin CP này</label><div class="calc" id="bR">0%</div><span class="note">Auto từ master list</span></div>
       <div class="row"><label>Sức mua từ dư ký quỹ (EE)</label><div class="calc" id="bBpRoom">0</div><span class="note">= EE / (1−T.lệ) — EE = E − (1−T.lệ)×V</span></div>
       <div class="row"><label>Sức mua thêm từ tiền mặt</label><div class="calc" id="bBpCash">0</div><span class="note">= M / (1−T.lệ) — cộng thêm nếu có</span></div>
-      <div class="row"><label><b>Sức mua TỔNG (GT lệnh)</b></label><div class="calc star" id="bBpTotal">0</div><span class="note">= (EE + tiền mặt)/(1−T.lệ), kẹp HM mã & HM 81 tỷ</span></div>
+      <div class="row"><label><b>Sức mua TỔNG (GT lệnh)</b></label><div class="calc star" id="bBpTotal">0</div><span class="note">= (EE + tiền mặt)/(1−T.lệ), kẹp HM 1 mã & HM TK (<span class="hm-acct">90 tỷ</span>)</span></div>
       <div class="row"><label><b>KL tối đa có thể đặt</b></label><div class="calc star" id="bQtyMax">0</div><span class="note">làm tròn xuống 100</span></div>
-      <div class="row"><label>↳ Đang bị chặn bởi</label><div class="calc" id="bBoundBy">—</div><span class="note">Hạn mức giới hạn: HM 1 mã hay HM tài khoản 81 tỷ</span></div>
+      <div class="row"><label>↳ Đang bị chặn bởi</label><div class="calc" id="bBoundBy">—</div><span class="note">Hạn mức giới hạn: HM 1 mã hay HM tài khoản (<span class="hm-acct">90 tỷ</span>)</span></div>
       <div class="row"><label>Phí mua ước tính</label><div class="calc" id="bFee">0</div><span class="note">theo KL tối đa</span></div>
       <div class="row"><label>Tiền vay dự kiến</label><div class="calc" id="bLoan">0</div><span class="note">theo KL tối đa</span></div>
       <div class="row" id="bLimitRow" style="display:none"><label style="color:#c0392b">⚠️ Hạn mức/mã</label><div class="calc" id="bLimitWarn" style="color:#c0392b;font-weight:600"></div><span class="note">Đã chạm trần HM 1 mã</span></div>
@@ -223,7 +245,7 @@
       <div class="row"><label>Vốn tự có cần</label><div class="calc" id="bcEquity">0</div><span class="note">= GT × (1−T.lệ) + phí</span></div>
       <div class="row"><label>Vốn chủ khả dụng (EE + tiền)</label><div class="calc" id="bcEquityAvail">0</div><span class="note">= dư ký quỹ EE + tiền mặt</span></div>
       <div class="row"><label>Kiểm tra sức mua</label><div class="calc" id="bcBpChk">—</div><span class="note">Vốn tự có cần ≤ vốn chủ khả dụng?</span></div>
-      <div class="row"><label>Kiểm tra hạn mức nợ</label><div class="calc" id="bcRoomChk">—</div><span class="note">Tiền vay so HM 1 mã & HM tài khoản 81 tỷ</span></div>
+      <div class="row"><label>Kiểm tra hạn mức nợ</label><div class="calc" id="bcRoomChk">—</div><span class="note">Tiền vay so HM 1 mã & HM tài khoản (<span class="hm-acct">90 tỷ</span>)</span></div>
       <div class="row"><label><b>Rtt sau khi mua (KL chọn)</b></label><div class="calc star" id="bcRtt">—</div><span class="note" id="bcRttFloorNote"></span></div>
     </div>
 
@@ -486,6 +508,8 @@
       <div class="hint">
         Toàn bộ <b id="listCount">—</b> mã CP trong danh mục ký quỹ OCBS. Ô màu vàng: nhập giá chặn thật (lấy từ BOS). Chưa nhập → tính theo giá thị trường.
         <br>Giá chặn được lưu tự động vào server, dùng chung cho tất cả tính toán.
+        <br><b>Tỷ lệ cho vay</b> và <b>Room (HM 1 mã)</b> chỉ sửa được khi đã <b>đăng nhập admin</b>. Room bị kẹp bởi trần 1 mã
+        (<span class="hm-stock">300 tỷ</span>) đặt ở tab 🧮 Rtt &amp; Danh mục.
       </div>
       <div class="toolbar" style="gap:8px;flex-wrap:wrap">
         <input id="capSearch" type="text" placeholder="🔍 Tìm mã, tên..." style="max-width:220px">
@@ -493,6 +517,7 @@
           <option value="all">Tất cả</option>
           <option value="capped">Đã có giá chặn</option>
           <option value="nocap">Chưa có giá chặn</option>
+          <option value="edited">Admin đã chỉnh (tỷ lệ/room)</option>
         </select>
         <select id="capExch" style="padding:6px 10px;border:1px solid #dbe3ec;border-radius:6px;font-size:13px">
           <option value="">Tất cả sàn</option>
@@ -501,6 +526,9 @@
           <option value="UPCOM">UPCOM</option>
         </select>
         <button class="btn sm" id="capSave">💾 Lưu giá chặn</button>
+        <button class="btn sm admin-only" id="ovSave" style="display:none">💾 Lưu tỷ lệ &amp; room</button>
+        <button class="btn sm admin-only" id="ovExport" style="display:none;background:#455a64">⬇️ Xuất file JSON</button>
+        <button class="btn sm admin-only" id="ovReset" style="display:none;background:#b71c1c">♻️ Về mặc định PL1</button>
         <span class="info" id="capInfo"></span>
       </div>
       <div style="overflow-x:auto;max-height:60vh;overflow-y:auto;position:relative">
@@ -510,10 +538,10 @@
               <th style="cursor:pointer" data-sort="sym">Mã CK ↕</th>
               <th>Tên Công ty</th>
               <th>Sàn</th>
-              <th style="cursor:pointer" data-sort="r">T.lệ vay ↕</th>
+              <th style="cursor:pointer" data-sort="r" title="Tỷ lệ CTCK cho vay – admin sửa được">T.lệ vay ✏️ ↕</th>
               <th title="Để trống = dùng giá chặn PL1 nếu có, không có thì dùng giá TT">Giá chặn trên ★</th>
               <th title="Giá floor Force Sell">Giá chặn dưới</th>
-              <th title="Hạn mức dư nợ tối đa cho 1 mã (Phụ lục 1)">HM 1 mã</th>
+              <th style="cursor:pointer" data-sort="limit" title="Room = hạn mức dư nợ tối đa cho 1 mã (Phụ lục 1) – admin sửa được">Room / HM 1 mã ✏️ ↕</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -525,6 +553,6 @@
 
 </div>
 
-<script src="app.js?v=20260622-130733"></script>
+<script src="app.js?v=20260817-095048"></script>
 </body>
 </html>

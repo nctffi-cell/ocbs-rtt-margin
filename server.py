@@ -62,6 +62,23 @@ def api_caps_post():
             json.dump(data, f, ensure_ascii=False, indent=2)
     return jsonify({"ok": True, "count": len(data)})
 
+# ── API: overrides (tỷ lệ cho vay & room 1 mã do admin chỉnh) ──
+OVR_JSON = os.path.join(STATIC, "overrides.json")
+
+@app.route("/api/overrides", methods=["GET"])
+def api_overrides_get():
+    if not os.path.exists(OVR_JSON):
+        return jsonify({})
+    with open(OVR_JSON, "r", encoding="utf-8") as f:
+        return jsonify(json.load(f))
+
+@app.route("/api/overrides", methods=["POST"])
+def api_overrides_post():
+    data = request.get_json() or {}
+    with open(OVR_JSON, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    return jsonify({"ok": True, "count": len(data)})
+
 # ── API: realtime price proxy → SSI Iboard ────────────────────
 SSI_URL = "https://iboard-query.ssi.com.vn/stock/{sym}"
 SSI_HEADERS = {"accept": "application/json", "user-agent": "Mozilla/5.0"}
