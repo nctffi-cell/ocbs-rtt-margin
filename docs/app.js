@@ -97,6 +97,12 @@ async function loadMaster() {
   }
   if (!d) { $('hdrInfo').textContent = '⚠️ Không tải được master list'; return; }
   STATE.master = d.stocks || {};
+  // Danh mục admin nhập trên web (lưu ở server) đè lên bản gốc trong repo
+  if (SERVER_DATA && SERVER_DATA.master && SERVER_DATA.master.stocks) {
+    STATE.master = Object.assign({}, STATE.master, SERVER_DATA.master.stocks);
+    d.updated = SERVER_DATA.master.updated || d.updated;
+    d.count   = Object.keys(STATE.master).length;
+  }
   if ($('listDate')) $('listDate').textContent = `Danh mục áp dụng: ${d.updated || '—'}  (${d.count||0} mã)`;
   if ($('listCount')) $('listCount').textContent = d.count || Object.keys(STATE.master).length;
   $('hdrInfo').textContent = `${d.count || 0} mã CK · cập nhật ${d.updated || '—'}`;
@@ -105,14 +111,52 @@ const LS_ADMIN = 'ocbs_admin_session';
 const LS_TOKEN = 'ocbs_server_token';
 
 // ╔════════════════ LƯU LÊN SERVER ════════════════════════════╗
-// Web chạy trên GitHub Pages (tĩnh) nên "server" ở đây = chính repo:
-// admin bấm lưu → ghi thẳng file docs/*.json trên GitHub qua Contents API,
-// GitHub Pages build lại ~1 phút → MỌI người vào web đều thấy số mới.
-// Chạy local bằng server.py thì ưu tiên /api/... cho nhanh.
-// KHÔNG dùng localStorage làm nơi lưu dữ liệu danh mục nữa.
+// Web chạy trên GitHub Pages (tĩnh) nên phần lưu nằm ở Cloudflare Worker
+// (thư mục worker/ trong repo): admin sửa → tự lưu vào Worker → MỌI người
+// vào web thấy ngay, không phải chờ build lại web.
+// Thứ tự ưu tiên: Worker → server.py (khi chạy local) → GitHub API (dự phòng).
+// KHÔNG dùng localStorage làm nơi lưu dữ liệu danh mục.
+//
+// ⬇️ DÁN URL WORKER VÀO ĐÂY sau khi deploy (vd 'https://ocbs-admin.abc.workers.dev')
+const API_BASE = '';
+
+const LS_API = 'ocbs_api_url';
+const getApi = () => {
+  let u = API_BASE;
+  if (!u) { try { u = localStorage.getItem(LS_API) || ''; } catch(_) {} }
+  return u.replace(/\/+$/, '');
+};
+const setApi = u => { try { u ? localStorage.setItem(LS_API, u) : localStorage.removeItem(LS_API); } catch(_) {} };
+
+// Dữ liệu đọc 1 lần từ Worker lúc khởi động: {overrides, caps, settings, master}
+let SERVER_DATA = null;
+async function loadServerData() {
+  const api = getApi(); if (!api) return;
+  try {
+    const r = await fetch(`${api}/data`, {cache:'no-store'});
+    if (r.ok) SERVER_DATA = await r.json();
+  } catch(_) { SERVER_DATA = null; }
+}
+// Lưu 1 nhóm dữ liệu qua Worker (cần đăng nhập admin)
+async function apiSave(key, data) {
+  const api = getApi(); if (!api) return { ok: false, msg: 'chưa cấu hình server' };
+  const cred = adminCred();
+  if (!cred) return { ok: false, msg: 'chưa đăng nhập admin' };
+  try {
+    const r = await fetch(`${api}/save`, {
+      method: 'POST', headers: {'content-type':'application/json'},
+      body: JSON.stringify({ user: cred.u, pass: cred.p, key, data }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok && j.ok) return { ok: true, msg: 'đã lưu lên server' };
+    return { ok: false, msg: j.error || `HTTP ${r.status}` };
+  } catch(_) { return { ok: false, msg: 'không kết nối được server' }; }
+}
+
 const GH_REPO   = 'nctffi-cell/ocbs-rtt-margin';
 const GH_BRANCH = 'main';
-const GH_FILES  = { caps: 'docs/caps.json', overrides: 'docs/overrides.json', settings: 'docs/settings.json' };
+const GH_FILES  = { caps: 'docs/caps.json', overrides: 'docs/overrides.json',
+                    settings: 'docs/settings.json', master: 'docs/stocks.json' };
 
 const getToken = () => { try { return localStorage.getItem(LS_TOKEN) || ''; } catch(_) { return ''; } };
 const setToken = t => { try { t ? localStorage.setItem(LS_TOKEN, t) : localStorage.removeItem(LS_TOKEN); } catch(_) {} };
@@ -157,8 +201,13 @@ async function ghSaveJson(path, obj, message) {
     return { ok: false, msg: `HTTP ${r.status} ${err.message || ''}`.trim() };
   } catch(e) { return { ok: false, msg: 'không kết nối được GitHub' }; }
 }
-// Lưu chung cho caps & overrides: thử server.py trước, sau đó GitHub.
+// Lưu chung: Worker → server.py (local) → GitHub API (dự phòng).
 async function saveToServer(kind, obj, message) {
+  if (getApi()) {
+    const res = await apiSave(kind, obj);
+    if (res.ok) return res;
+    if (res.msg !== 'chưa cấu hình server') return res;   // lỗi thật → báo luôn, đừng im lặng
+  }
   try {
     const r = await fetch(`/api/${kind}`, {method:'POST', headers:{'content-type':'application/json'},
       body: JSON.stringify(obj)});
@@ -169,23 +218,43 @@ async function saveToServer(kind, obj, message) {
 function showSaveResult(res, what, n) {
   const el = $('capInfo');
   if (res.ok) {
-    el.textContent = `✅ Đã lưu ${n} mã ${what} lên server — web cập nhật cho mọi người sau ~1 phút`;
+    el.textContent = `✅ Đã lưu ${n} mã ${what} lên server — mọi người vào web đều thấy số mới`;
     el.style.color = '#2e7d32';
   } else {
-    el.textContent = `❌ CHƯA lưu được ${what}: ${res.msg}. Bấm "🔗 Kết nối server" để nhập token, hoặc "⬇️ Xuất JSON" gửi IT.`;
+    el.textContent = `❌ CHƯA lưu được ${what}: ${res.msg}. Bấm "🔗 Kết nối server" hoặc "⬇️ Xuất JSON" gửi IT.`;
     el.style.color = '#c0392b';
   }
   setTimeout(() => { el.textContent = ''; el.style.color = ''; }, 12000);
 }
 
-// ── Đọc dữ liệu: luôn lấy bản trên server (thêm ?t= để không dính cache) ──
+// ── Tự động lưu: admin sửa xong ~1,5 giây là ghi lên server, khỏi bấm nút ──
+const AUTOSAVE = {};
+function autoSave(kind) {
+  if (!isAdmin()) return;
+  clearTimeout(AUTOSAVE[kind]);
+  const el = $('capInfo');
+  if (el) { el.textContent = '✍️ Đang sửa…'; el.style.color = '#7d6608'; }
+  AUTOSAVE[kind] = setTimeout(async () => {
+    const map = { overrides: [STATE.overrides, 'tỷ lệ & room'], caps: [STATE.caps, 'giá chặn'] };
+    const [obj, what] = map[kind];
+    if (el) { el.textContent = '⏳ Đang lưu lên server…'; el.style.color = '#7d6608'; }
+    const res = await saveToServer(kind, obj, `data: cap nhat ${kind} - tu web admin`);
+    showSaveResult(res, what, Object.keys(obj).length);
+  }, 1500);
+}
+
+// ── Đọc dữ liệu: Worker → server.py → file tĩnh trong repo ──
 const noCache = url => fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now(), {cache:'no-store'});
+async function loadJson(key, file) {
+  if (SERVER_DATA && SERVER_DATA[key]) return SERVER_DATA[key];      // bản admin lưu trên Worker
+  for (const url of [`/api/${key}`, file]) {
+    try { const r = await noCache(url); if (r.ok) return await r.json(); } catch(_) {}
+  }
+  return null;
+}
 
 async function loadCaps() {
-  STATE.caps = {};
-  for (const url of ['/api/caps', 'caps.json']) {
-    try { const r = await noCache(url); if (r.ok) { STATE.caps = await r.json(); return; } } catch(_) {}
-  }
+  STATE.caps = (await loadJson('caps', 'caps.json')) || {};
 }
 async function saveCaps() {
   const n = Object.keys(STATE.caps).length;
@@ -197,10 +266,7 @@ async function saveCaps() {
 // ── Overrides: tỷ lệ cho vay (r) & room (HM 1 mã) do ADMIN chỉnh ──
 // Thứ tự ưu tiên khi tính: overrides (admin) → master list (Phụ lục 1).
 async function loadOverrides() {
-  STATE.overrides = {};
-  for (const url of ['/api/overrides', 'overrides.json']) {
-    try { const r = await noCache(url); if (r.ok) { STATE.overrides = await r.json(); return; } } catch(_) {}
-  }
+  STATE.overrides = (await loadJson('overrides', 'overrides.json')) || {};
 }
 async function saveOverrides() {
   const n = Object.keys(STATE.overrides).length;
@@ -208,25 +274,168 @@ async function saveOverrides() {
   const res = await saveToServer('overrides', STATE.overrides, `data: cap nhat ty le & room (${n} ma) - tu web admin`);
   showSaveResult(res, 'tỷ lệ & room', n);
 }
-// Kết nối server: nhập Personal Access Token (chỉ lưu trên máy admin)
-function connectServer() {
-  const cur = getToken();
-  const msg = cur
-    ? 'Đang kết nối server rồi.\n\nDán token mới để đổi, hoặc để TRỐNG rồi OK để ngắt kết nối:'
-    : 'Dán GitHub Personal Access Token (fine-grained, quyền Contents: Read and write cho repo ' + GH_REPO + '):\n\n'
-      + 'Token chỉ lưu trên máy này, dùng để ghi thay đổi lên server.';
-  const t = prompt(msg, '');
-  if (t === null) return;                       // bấm Cancel
-  setToken(t.trim());
+// Kết nối server: dán địa chỉ Worker (chỉ cần làm 1 lần, xem worker/README)
+async function connectServer() {
+  const cur = getApi();
+  const u = prompt(
+    (cur ? `Đang dùng server:\n${cur}\n\nDán địa chỉ mới để đổi, để TRỐNG rồi OK để ngắt:`
+         : 'Dán địa chỉ server (Cloudflare Worker), ví dụ:\nhttps://ocbs-admin.tenban.workers.dev'),
+    cur);
+  if (u === null) return;
+  setApi(u.trim());
+  await loadServerData();
+  await loadOverrides(); await loadCaps(); await loadLimits();
+  refreshLimitLabels(); renderCaps(); recalcAll();
   updateServerStatus();
 }
-function updateServerStatus() {
+async function updateServerStatus() {
   const el = $('srvStatus'); if (!el) return;
-  const on = !!getToken();
-  el.textContent = on ? '🟢 Đã kết nối server' : '🔴 Chưa kết nối server';
-  el.style.color = on ? '#2e7d32' : '#c0392b';
-  if ($('ovConnect')) $('ovConnect').textContent = on ? '🔗 Đổi/ngắt token' : '🔗 Kết nối server';
+  const api = getApi();
+  if (!api) {
+    el.textContent = getToken() ? '🟡 Đang dùng token GitHub (dự phòng)' : '🔴 Chưa kết nối server';
+    el.style.color = getToken() ? '#7d6608' : '#c0392b';
+  } else {
+    el.textContent = SERVER_DATA ? '🟢 Đã kết nối server' : '🟠 Server không phản hồi';
+    el.style.color = SERVER_DATA ? '#2e7d32' : '#c0392b';
+  }
+  if ($('ovConnect')) $('ovConnect').textContent = api ? '🔗 Đổi server' : '🔗 Kết nối server';
 }
+// ╔═══════ NHẬP DANH MỤC HÀNG LOẠT (dán từ Excel / file CSV) ═══════╗
+// Đọc bảng có dòng tiêu đề, tự nhận cột theo tên: Mã / Tên / Sàn /
+// Tỷ lệ / ts / Giá chặn / Room. Chấp nhận 50, 50%, 0.5 cho tỷ lệ;
+// 100, "100 tỷ", 100000000000 cho room.
+const COLS = [
+  { f: 'sym',   kw: ['mã','ma ck','ma','symbol','stock','ck'] },
+  { f: 'name',  kw: ['tên','ten','name','công ty','cong ty'] },
+  { f: 'exch',  kw: ['sàn','san','exch','floor'] },
+  { f: 'r',     kw: ['tỷ lệ cho vay','ty le cho vay','tỷ lệ vay','ty le vay','tỷ lệ','ty le','margin','cho vay'] },
+  { f: 'ts',    kw: ['ts','tài sản','tai san','định giá','dinh gia','evalratio'] },
+  { f: 'cap',   kw: ['giá chặn','gia chan','chặn','chan','cap'] },
+  { f: 'limit', kw: ['room','hạn mức','han muc','hm','limit'] },
+];
+const norm = s => (s||'').toString().trim().toLowerCase();
+function splitRows(text) {
+  return text.replace(/\r/g,'').split('\n').filter(l => l.trim())
+    .map(l => l.includes('\t') ? l.split('\t') : l.split(/[;,](?=(?:[^"]*"[^"]*")*[^"]*$)/))
+    .map(cells => cells.map(c => c.replace(/^"|"$/g,'').trim()));
+}
+function detectCols(header) {
+  const map = {};
+  header.forEach((h, i) => {
+    const t = norm(h);
+    if (!t) return;
+    for (const c of COLS) {
+      if (map[c.f] != null) continue;
+      if (c.kw.some(k => t.includes(k))) { map[c.f] = i; break; }
+    }
+  });
+  return map;
+}
+const numOf = v => {
+  const s = (v||'').toString().replace(/[^\d.,-]/g,'').replace(/\.(?=\d{3}\b)/g,'').replace(',', '.');
+  const n = parseFloat(s);
+  return isNaN(n) ? null : n;
+};
+function parseRate(v) {                       // 50 | 50% | 0.5 → 0.5
+  const n = numOf(v); if (n == null) return null;
+  return n > 1 ? n / 100 : n;
+}
+function parseMoney(v) {                      // 100 | "100 tỷ" | 1e11 → 100000000000
+  const n = numOf(v); if (n == null) return null;
+  return n < 1e6 ? Math.round(n * 1e9) : Math.round(n);
+}
+function parseImport(text) {
+  const rows = splitRows(text);
+  if (rows.length < 2) return { error: 'Cần ít nhất 1 dòng tiêu đề + 1 dòng dữ liệu' };
+  const cols = detectCols(rows[0]);
+  if (cols.sym == null) return { error: 'Không tìm thấy cột "Mã CK" ở dòng tiêu đề' };
+  const items = [], unknown = [];
+  for (const cells of rows.slice(1)) {
+    const sym = (cells[cols.sym] || '').toUpperCase().replace(/[^A-Z0-9]/g,'');
+    if (!sym || sym.length > 10) continue;
+    const it = { sym };
+    if (cols.r     != null) it.r     = parseRate(cells[cols.r]);
+    if (cols.limit != null) it.limit = parseMoney(cells[cols.limit]);
+    if (cols.cap   != null) it.cap   = numOf(cells[cols.cap]);
+    if (cols.ts    != null) it.ts    = parseRate(cells[cols.ts]);
+    if (cols.name  != null) it.name  = (cells[cols.name] || '').trim();
+    if (cols.exch  != null) it.exch  = (cells[cols.exch] || '').trim().toUpperCase();
+    items.push(it);
+    if (!STATE.master[sym]) unknown.push(sym);
+  }
+  return { cols, items, unknown };
+}
+// Áp danh mục vừa nhập: mã mới → thêm vào master; tỷ lệ/room → overrides; giá chặn → caps
+function applyImport(items) {
+  let nNew = 0, nR = 0, nLim = 0, nCap = 0;
+  for (const it of items) {
+    const s = it.sym;
+    if (!STATE.master[s]) {
+      STATE.master[s] = { name: it.name || s, exch: it.exch || '', r: it.r ?? 0.5,
+                          ts: it.ts ?? 1, cap: it.cap ?? null, limit: it.limit ?? null };
+      nNew++;
+      continue;                                  // số của mã mới nằm luôn trong master
+    }
+    if (it.name) STATE.master[s].name = it.name;
+    if (it.exch) STATE.master[s].exch = it.exch;
+    if (it.ts != null) STATE.master[s].ts = it.ts;
+    if (it.r != null && it.r !== STATE.master[s].r) {
+      STATE.overrides[s] = Object.assign({}, STATE.overrides[s], { r: it.r }); nR++;
+    }
+    if (it.limit != null && it.limit !== STATE.master[s].limit) {
+      STATE.overrides[s] = Object.assign({}, STATE.overrides[s], { limit: it.limit }); nLim++;
+    }
+    if (it.cap != null && it.cap !== STATE.master[s].cap) {
+      STATE.caps[s] = Object.assign({}, STATE.caps[s], { high: it.cap }); nCap++;
+    }
+  }
+  return { nNew, nR, nLim, nCap };
+}
+async function saveMaster() {
+  const data = { updated: new Date().toISOString().slice(0,19).replace('T',' '), stocks: STATE.master };
+  return saveToServer('master', data, 'data: cap nhat danh muc ky quy - tu web admin');
+}
+function wireImport() {
+  const box = $('impModal'); if (!box) return;
+  const open = () => { box.classList.add('open'); $('impText').value = ''; $('impInfo').textContent = ''; };
+  const close = () => box.classList.remove('open');
+  if ($('ovImport')) $('ovImport').onclick = open;
+  $('impCancel').onclick = close;
+  box.onclick = e => { if (e.target.id === 'impModal') close(); };
+  $('impFile').onchange = async e => {
+    const f = e.target.files[0]; if (!f) return;
+    if (/\.xlsx?$/i.test(f.name)) {
+      $('impInfo').innerHTML = '⚠️ File Excel (.xlsx) chưa đọc trực tiếp được — mở file rồi <b>bôi đen bảng, Ctrl+C và dán vào ô trên</b>, hoặc lưu thành .csv.';
+      return;
+    }
+    $('impText').value = await f.text();
+    $('impInfo').textContent = `Đã đọc file ${f.name}`;
+  };
+  $('impPreview').onclick = () => {
+    const res = parseImport($('impText').value);
+    if (res.error) { $('impInfo').innerHTML = `❌ ${res.error}`; return; }
+    const got = Object.keys(res.cols).filter(k => k !== 'sym').join(', ') || '(chỉ có mã)';
+    $('impInfo').innerHTML = `✅ Đọc được <b>${res.items.length}</b> mã · cột nhận diện: ${got}`
+      + (res.unknown.length ? `<br>🆕 ${res.unknown.length} mã chưa có trong danh mục cũ: ${res.unknown.slice(0,15).join(', ')}${res.unknown.length>15?'…':''}` : '');
+  };
+  $('impApply').onclick = async () => {
+    if (!isAdmin()) return;
+    const res = parseImport($('impText').value);
+    if (res.error) { $('impInfo').innerHTML = `❌ ${res.error}`; return; }
+    if (!confirm(`Áp dụng ${res.items.length} mã vào danh mục?`)) return;
+    const n = applyImport(res.items);
+    $('impInfo').innerHTML = '⏳ Đang lưu lên server…';
+    const r1 = n.nNew ? await saveMaster() : { ok: true };
+    const r2 = (n.nR || n.nLim) ? await saveToServer('overrides', STATE.overrides, 'data: cap nhat ty le & room') : { ok: true };
+    const r3 = n.nCap ? await saveToServer('caps', STATE.caps, 'data: cap nhat gia chan') : { ok: true };
+    const bad = [r1, r2, r3].find(r => !r.ok);
+    $('impInfo').innerHTML = bad
+      ? `❌ Đã áp lên màn hình nhưng CHƯA lưu được: ${bad.msg}`
+      : `✅ Xong: ${n.nNew} mã mới · ${n.nR} đổi tỷ lệ · ${n.nLim} đổi room · ${n.nCap} giá chặn — đã lưu lên server`;
+    renderCaps(); recalcAll();
+  };
+}
+
 function exportOverrides() {
   const blob = new Blob([JSON.stringify(STATE.overrides, null, 2)], {type:'application/json'});
   const a = document.createElement('a');
@@ -237,10 +446,7 @@ function exportOverrides() {
 }
 // Hạn mức tối đa (TK & 1 mã) — cũng nằm trên server (docs/settings.json)
 async function loadLimits() {
-  let d = null;
-  for (const url of ['/api/settings', 'settings.json']) {
-    try { const r = await noCache(url); if (r.ok) { d = await r.json(); break; } } catch(_) {}
-  }
+  const d = await loadJson('settings', 'settings.json');
   if (!d) return;
   if (d.maxLoan  && $('pMaxLoan'))  $('pMaxLoan').value  = d.maxLoan;
   if (d.maxStock && $('pMaxStock')) $('pMaxStock').value = d.maxStock;
@@ -262,9 +468,9 @@ function refreshLimitLabels() {
 }
 
 // ╔════════════════ QUYỀN ADMIN ═══════════════════════════════╗
-// Đăng nhập gate giao diện: mở khoá ô sửa tỷ lệ / room / hạn mức.
-// LƯU Ý: đây là trang tĩnh nên đây chỉ là khoá GIAO DIỆN, không phải
-// bảo mật server — ai xem source vẫn suy ra được. Đừng dùng mật khẩu thật.
+// Đăng nhập vừa mở khoá giao diện, vừa là chìa để ghi lên server:
+// mật khẩu được gửi kèm mỗi lần lưu và Worker mới là nơi kiểm tra thật.
+// (Phần hash dưới đây chỉ để khoá giao diện, không phải bảo mật.)
 const ADMIN_HASH = '8c1ff3a8706fa117cd3c7f863895ea8e14849a0e317b6d634ac9420f1c08ca91';
 const ADMIN_TTL  = 8 * 3600 * 1000;   // phiên đăng nhập 8 giờ
 
@@ -272,11 +478,17 @@ async function sha256(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
   return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
 }
-function isAdmin() {
+function adminSession() {
   try {
     const s = JSON.parse(localStorage.getItem(LS_ADMIN) || 'null');
-    return !!(s && s.exp > Date.now());
-  } catch(_) { return false; }
+    return (s && s.exp > Date.now()) ? s : null;
+  } catch(_) { return null; }
+}
+function isAdmin() { return !!adminSession(); }
+// Tài khoản gửi kèm khi ghi lên server (Worker kiểm tra lại)
+function adminCred() {
+  const s = adminSession();
+  return s ? { u: s.u, p: s.p || '' } : null;
 }
 function applyAdminUI() {
   const on = isAdmin();
@@ -292,7 +504,8 @@ async function doLogin() {
   const p = $('admPass').value || '';
   const h = await sha256(`${u}:${p}`);
   if (h !== ADMIN_HASH) { $('admErr').textContent = '❌ Sai tên đăng nhập hoặc mật khẩu'; return; }
-  localStorage.setItem(LS_ADMIN, JSON.stringify({u, exp: Date.now() + ADMIN_TTL}));
+  // Giữ mật khẩu trong phiên để gửi kèm khi ghi lên server (Worker xác thực).
+  localStorage.setItem(LS_ADMIN, JSON.stringify({u, p, exp: Date.now() + ADMIN_TTL}));
   $('admErr').textContent = '';
   $('admPass').value = '';
   $('loginModal').classList.remove('open');
@@ -1456,15 +1669,18 @@ function renderCaps() {
             value="${roomTy != null ? roomTy : ''}" placeholder="${(ceiling/1e9).toFixed(0)}"
             title="Room 1 mã, đơn vị TỶ đồng (trần ${fmtTy(ceiling)})" style="${row.limEdited ? editMark : ''}">`
       : `<span style="font-size:12px;color:${capped?'#c0392b':'#666'}">${roomTxt}${row.limEdited?' ✏️':''}</span>`;
+    // Giá chặn cũng chỉ admin sửa (vì lưu lên server cần quyền admin)
+    const capCell = (f, val, ph) => adm
+      ? `<input type="number" data-sym="${row.sym}" data-f="${f}" value="${val||''}"
+            placeholder="${ph}" style="${val ? editMark : ''}">`
+      : `<span style="font-size:12px;color:${val?'#7d6608':'#999'}">${val ? val.toLocaleString('vi-VN') : ph}</span>`;
     tr.innerHTML = `
       <td style="font-weight:700;color:#1F3864">${row.sym} ${pl1Tag}</td>
       <td style="text-align:left;font-size:12px;color:#444">${row.name}</td>
       <td style="text-align:center;font-size:12px">${row.exch}</td>
       <td style="text-align:center">${rCell}</td>
-      <td><input type="number" data-sym="${row.sym}" data-f="high" value="${row.high||''}"
-          placeholder="${placeholderHigh}" style="${row.high ? editMark : ''}"></td>
-      <td><input type="number" data-sym="${row.sym}" data-f="low"  value="${row.low||''}"
-          placeholder="—" style="${row.low  ? editMark : ''}"></td>
+      <td>${capCell('high', row.high, placeholderHigh)}</td>
+      <td>${capCell('low',  row.low,  '—')}</td>
       <td style="text-align:center"${capped ? ' title="Room khai báo vượt trần 1 mã → tính theo trần"' : ''}>${limCell}${capped ? ' <span style="font-size:10px;color:#c0392b">▲trần</span>' : ''}</td>
     `;
     frag.appendChild(tr);
@@ -1517,8 +1733,7 @@ $('tblCaps').addEventListener('input', e => {
       t.style.background = '#FFF2CC'; t.style.color = '#7d6608'; t.style.fontWeight = '600';
     }
     if (f === 'r') syncHoldingRates(sym);        // đồng bộ ngay xuống danh mục tab 1
-    const ovN = Object.keys(STATE.overrides).length;
-    $('capInfo').textContent = `${ovN} mã admin đã chỉnh — nhớ bấm 💾 Lưu tỷ lệ & room`;
+    autoSave('overrides');                       // tự lưu lên server sau ~1,5 giây
     recalcAll();
     return;
   }
@@ -1533,8 +1748,7 @@ $('tblCaps').addEventListener('input', e => {
     if (STATE.caps[sym] && !STATE.caps[sym].high && !STATE.caps[sym].low) delete STATE.caps[sym];
     t.style.background = ''; t.style.color = ''; t.style.fontWeight = '';
   }
-  const cappedCount = Object.keys(STATE.caps).length;
-  $('capInfo').textContent = `${cappedCount} mã đã có giá chặn`;
+  autoSave('caps');                              // tự lưu lên server sau ~1,5 giây
   recalcAll();
 });
 
@@ -1780,6 +1994,9 @@ function initTransfer() {
 // ── Init ───────────────────────────────────────────────────
 (async () => {
   wireAdmin();
+  wireImport();
+  await loadServerData();        // dữ liệu admin đang lưu trên server (nếu đã cấu hình)
+  updateServerStatus();
   await loadLimits();
   refreshLimitLabels();
   await loadMaster();

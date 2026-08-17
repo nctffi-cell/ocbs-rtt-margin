@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>OCBS Margin Calculator</title>
-<link rel="stylesheet" href="style.css?v=20260817-101017">
+<link rel="stylesheet" href="style.css?v=20260817-102543">
 </head>
 <body>
 <header>
@@ -29,6 +29,28 @@
         <button class="btn" id="admLogin">Đăng nhập</button>
         <button class="btn sm" id="admCancel" style="background:#90a4ae">Đóng</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Modal nhập danh mục hàng loạt ===== -->
+<div class="modal-bg" id="impModal">
+  <div class="modal" style="width:min(720px,94vw)">
+    <div class="modal-head">📥 NHẬP DANH MỤC KÝ QUỸ MỚI</div>
+    <div class="modal-body">
+      <div class="hint" style="margin:0 0 8px">
+        Mở file PL1 trong Excel → <b>bôi đen cả bảng (kể cả dòng tiêu đề) → Ctrl+C → dán vào ô dưới</b> → bấm Kiểm tra rồi Áp dụng.
+        Cột nhận diện tự động theo tiêu đề: <b>Mã · Tên · Sàn · Tỷ lệ · ts · Giá chặn · Room</b> — thiếu cột nào thì giữ nguyên cột đó.
+        Tỷ lệ nhập 50 hay 0.5 đều được; Room nhập 100 hiểu là 100 tỷ.
+      </div>
+      <textarea id="impText" rows="10" placeholder="Mã	Tên	Sàn	Tỷ lệ	Room	Giá chặn&#10;HUT	Tasco	HNX	50%	100	25000" style="width:100%;font-family:Consolas,monospace;font-size:12px;padding:8px;border:1px solid #dbe3ec;border-radius:4px"></textarea>
+      <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <label class="btn sm" style="background:#455a64;cursor:pointer">📂 Chọn file CSV<input type="file" id="impFile" accept=".csv,.tsv,.txt,.xlsx,.xls" style="display:none"></label>
+        <button class="btn sm" id="impPreview">🔍 Kiểm tra</button>
+        <button class="btn" id="impApply">✅ Áp dụng &amp; lưu server</button>
+        <button class="btn sm" id="impCancel" style="background:#90a4ae">Đóng</button>
+      </div>
+      <div id="impInfo" class="hint" style="margin-top:10px;font-style:normal"></div>
     </div>
   </div>
 </div>
@@ -526,8 +548,9 @@
           <option value="HNX">HNX</option>
           <option value="UPCOM">UPCOM</option>
         </select>
-        <button class="btn sm" id="capSave">💾 Lưu giá chặn</button>
+        <button class="btn sm admin-only" id="capSave" style="display:none">💾 Lưu giá chặn</button>
         <button class="btn sm admin-only" id="ovSave" style="display:none">💾 Lưu tỷ lệ &amp; room</button>
+        <button class="btn sm admin-only" id="ovImport" style="display:none;background:#2e7d32">📥 Nhập danh mục mới</button>
         <button class="btn sm admin-only" id="ovConnect" style="display:none;background:#00695c">🔗 Kết nối server</button>
         <button class="btn sm admin-only" id="ovExport" style="display:none;background:#455a64">⬇️ Xuất file JSON</button>
         <button class="btn sm admin-only" id="ovReset" style="display:none;background:#b71c1c">♻️ Về mặc định PL1</button>
@@ -556,6 +579,6 @@
 
 </div>
 
-<script src="app.js?v=20260817-101017"></script>
+<script src="app.js?v=20260817-102543"></script>
 </body>
 </html>

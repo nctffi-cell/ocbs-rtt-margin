@@ -79,6 +79,16 @@ def api_overrides_post():
         json.dump(data, f, ensure_ascii=False, indent=2)
     return jsonify({"ok": True, "count": len(data)})
 
+# ── API: master (danh mục ký quỹ admin nhập từ web) ───────────
+@app.route("/api/master", methods=["POST"])
+def api_master_post():
+    data = request.get_json() or {}
+    if not data.get("stocks"):
+        return jsonify({"ok": False, "error": "thiếu stocks"}), 400
+    with open(STOCKS_JSON, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    return jsonify({"ok": True, "count": len(data["stocks"])})
+
 # ── API: settings (hạn mức tối đa TK & 1 mã) ──────────────────
 SET_JSON = os.path.join(STATIC, "settings.json")
 
