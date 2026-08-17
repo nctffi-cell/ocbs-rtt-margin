@@ -117,8 +117,8 @@ const LS_TOKEN = 'ocbs_server_token';
 // Thứ tự ưu tiên: Worker → server.py (khi chạy local) → GitHub API (dự phòng).
 // KHÔNG dùng localStorage làm nơi lưu dữ liệu danh mục.
 //
-// ⬇️ DÁN URL WORKER VÀO ĐÂY sau khi deploy (vd 'https://ocbs-admin.abc.workers.dev')
-const API_BASE = '';
+// Địa chỉ server (Cloudflare Worker) — xem cách dựng ở worker/README.md
+const API_BASE = 'https://ocbs-admin.webchungkhoan68.workers.dev';
 
 const LS_API = 'ocbs_api_url';
 const getApi = () => {

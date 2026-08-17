@@ -32,9 +32,10 @@ Admin sửa trên web → tự lưu vào Worker → **mọi người vào web th
 8. Vào web → **🔒 Admin** đăng nhập → tab **⚙️ Giá chặn & Room** →
    **🔗 Kết nối server** → dán địa chỉ vừa copy.
 
-Bước 8 chỉ áp cho máy đang dùng. Để **mọi máy** dùng chung, dán địa chỉ đó vào
-biến `API_BASE` ở đầu `docs/app.js` rồi commit (hoặc gửi địa chỉ cho người
-quản trị repo làm giúp).
+**Đã cài xong ngày 17/08/2026**: Worker đang chạy tại
+`https://ocbs-admin.webchungkhoan68.workers.dev`, đã ghi cứng vào biến
+`API_BASE` đầu `docs/app.js` nên mọi máy tự dùng chung — bước 8 chỉ cần làm
+lại nếu đổi sang Worker khác.
 
 ## Kiểm tra hoạt động
 
