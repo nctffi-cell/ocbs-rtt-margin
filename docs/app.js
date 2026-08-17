@@ -256,11 +256,23 @@ async function loadJson(key, file) {
 async function loadCaps() {
   STATE.caps = (await loadJson('caps', 'caps.json')) || {};
 }
-async function saveCaps() {
-  const n = Object.keys(STATE.caps).length;
-  $('capInfo').textContent = '⏳ Đang lưu lên server…';
-  const res = await saveToServer('caps', STATE.caps, `data: cap nhat gia chan (${n} ma) - tu web admin`);
-  showSaveResult(res, 'giá chặn', n);
+// Một nút lưu duy nhất: ghi cả tỷ lệ/ts/room lẫn giá chặn lên server.
+// (Bình thường app đã tự lưu; nút này để lưu lại ngay khi cần cho chắc.)
+async function saveAllNow() {
+  const el = $('capInfo');
+  el.textContent = '⏳ Đang lưu lên server…'; el.style.color = '#7d6608';
+  const nOv = Object.keys(STATE.overrides).length, nCap = Object.keys(STATE.caps).length;
+  const r1 = await saveToServer('overrides', STATE.overrides, `data: cap nhat ty le & room (${nOv} ma) - tu web admin`);
+  const r2 = await saveToServer('caps',      STATE.caps,      `data: cap nhat gia chan (${nCap} ma) - tu web admin`);
+  const bad = [r1, r2].find(r => !r.ok);
+  if (bad) {
+    el.textContent = `❌ CHƯA lưu được: ${bad.msg}`;
+    el.style.color = '#c0392b';
+  } else {
+    el.textContent = `✅ Đã lưu ${nOv} mã tỷ lệ/ts/room · ${nCap} mã giá chặn lên server`;
+    el.style.color = '#2e7d32';
+  }
+  setTimeout(() => { el.textContent = ''; el.style.color = ''; }, 12000);
 }
 
 // ── Overrides: tỷ lệ cho vay (r) & room (HM 1 mã) do ADMIN chỉnh ──
@@ -1786,11 +1798,10 @@ $('tblCaps').addEventListener('input', e => {
   recalcAll();
 });
 
-$('capSave').onclick = saveCaps;
+$('capSave').onclick = saveAllNow;
 $('capSearch').oninput = renderCaps;
 $('capFilter').oninput = renderCaps;
 $('capExch').oninput   = renderCaps;
-if ($('ovSave'))   $('ovSave').onclick   = saveOverrides;
 if ($('ovExport')) $('ovExport').onclick = exportOverrides;
 if ($('ovConnect')) $('ovConnect').onclick = connectServer;
 if ($('ovReset'))  $('ovReset').onclick  = async () => {
