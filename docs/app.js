@@ -20,9 +20,10 @@ const getFb       = () => (+$('pFb').value       || 0.15) / 100;
 const getFs       = () => getFb() + 0.001;
 const getLoanRate = () => (+($('pLoanRate')?.value) || 13) / 100;   // lãi vay %/năm → tỷ lệ
 const getAdvRate  = () => (+($('pAdvRate')?.value)  || 13) / 100;   // lãi ứng trước %/năm → tỷ lệ
-const getMaxLoan  = () => +($('pMaxLoan')?.value)   || DEF_MAX_LOAN;
+// Hai ô hạn mức nhập theo kiểu có dấu phân cách nghìn (data-num) → dùng parseNum.
+const getMaxLoan  = () => parseNum($('pMaxLoan')?.value)  || DEF_MAX_LOAN;
 // Trần dư nợ tối đa cho 1 mã — kẹp lên trên room từng mã (PL1 / admin chỉnh).
-const getMaxStock = () => +($('pMaxStock')?.value)  || DEF_MAX_STOCK;
+const getMaxStock = () => parseNum($('pMaxStock')?.value) || DEF_MAX_STOCK;
 const fmtTy = n => (n==null || isNaN(n)) ? '—' : (n/1e9).toLocaleString('vi-VN', {maximumFractionDigits:1}) + ' tỷ';
 const fmtPct = n => (n==null || isNaN(n)) ? '—' : (n*100).toFixed(2) + '%';
 const fmtNum = n => (n==null || isNaN(n)) ? '—' : Math.round(n).toLocaleString('vi-VN');
@@ -560,8 +561,8 @@ function exportOverrides() {
 async function loadLimits() {
   const d = await loadJson('settings', 'settings.json');
   if (!d) return;
-  if (d.maxLoan  && $('pMaxLoan'))  $('pMaxLoan').value  = d.maxLoan;
-  if (d.maxStock && $('pMaxStock')) $('pMaxStock').value = d.maxStock;
+  if (d.maxLoan)  setNumVal($('pMaxLoan'),  d.maxLoan);
+  if (d.maxStock) setNumVal($('pMaxStock'), d.maxStock);
 }
 async function saveLimits() {
   $('limitInfo').textContent = '⏳ Đang lưu…';

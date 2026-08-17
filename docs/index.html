@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>OCBS Margin Calculator</title>
-<link rel="stylesheet" href="style.css?v=20260817-111404">
+<link rel="stylesheet" href="style.css?v=20260817-111640">
 </head>
 <body>
 <header>
@@ -113,8 +113,8 @@
       <div class="row"><label>Lãi ứng trước</label><input id="pAdvRate" type="number" value="13" step="0.5" min="0"><span class="note">%/năm — mặc định 13%</span></div>
       <div class="row"><label>Ngưỡng Call Margin</label><input id="pCall" type="number" value="0.35" step="0.01"><span class="note">Rtt < 35% → Call Margin</span></div>
       <div class="row"><label>Ngưỡng Force Sell</label><input id="pForce" type="number" value="0.30" step="0.01"><span class="note">Rtt < 30% → bán giải chấp</span></div>
-      <div class="row"><label>Dư nợ tối đa toàn TK</label><input id="pMaxLoan" type="number" value="90000000000" step="1000000000" data-admin><span class="note">Hạn mức OCBS — mặc định 90 tỷ đ <span class="lock-tag">🔒 admin</span></span></div>
-      <div class="row"><label>Hạn mức tối đa 1 mã</label><input id="pMaxStock" type="number" value="300000000000" step="10000000000" data-admin><span class="note">Trần tối đa 1 mã — mặc định 300 tỷ đ <span class="lock-tag">🔒 admin</span></span></div>
+      <div class="row"><label>Dư nợ tối đa toàn TK</label><input id="pMaxLoan" type="text" inputmode="numeric" data-num value="90000000000" data-admin><span class="note">Hạn mức OCBS — mặc định 90 tỷ đ <span class="lock-tag">🔒 admin</span></span></div>
+      <div class="row"><label>Hạn mức tối đa 1 mã</label><input id="pMaxStock" type="text" inputmode="numeric" data-num value="300000000000" data-admin><span class="note">Trần tối đa 1 mã — mặc định 300 tỷ đ <span class="lock-tag">🔒 admin</span></span></div>
       <div class="row"><label>HM 1 mã áp dụng</label><div class="calc" style="font-size:13px;color:#2e7d32">✓ min(Room từng mã, trần 1 mã)</div><span class="note">Room lấy theo Phụ lục 1 / admin chỉnh ở tab ⚙️ Giá chặn &amp; Room</span></div>
       <div class="row admin-only" style="display:none"><label>Lưu 2 hạn mức trên</label><button class="btn sm" id="limitSave">💾 Lưu hạn mức lên server</button><span class="note" id="limitInfo">Áp dụng cho tất cả người dùng</span></div>
     </div>
@@ -615,6 +615,6 @@
 
 </div>
 
-<script src="app.js?v=20260817-111404"></script>
+<script src="app.js?v=20260817-111640"></script>
 </body>
 </html>
