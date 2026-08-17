@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>OCBS Margin Calculator</title>
-<link rel="stylesheet" href="style.css?v=20260817-095048">
+<link rel="stylesheet" href="style.css?v=20260817-101017">
 </head>
 <body>
 <header>
@@ -59,6 +59,7 @@
       <div class="row"><label>Dư nợ tối đa toàn TK</label><input id="pMaxLoan" type="number" value="90000000000" step="1000000000" data-admin><span class="note">Hạn mức OCBS — mặc định 90 tỷ đ <span class="lock-tag">🔒 admin</span></span></div>
       <div class="row"><label>Hạn mức tối đa 1 mã</label><input id="pMaxStock" type="number" value="300000000000" step="10000000000" data-admin><span class="note">Trần tối đa 1 mã — mặc định 300 tỷ đ <span class="lock-tag">🔒 admin</span></span></div>
       <div class="row"><label>HM 1 mã áp dụng</label><div class="calc" style="font-size:13px;color:#2e7d32">✓ min(Room từng mã, trần 1 mã)</div><span class="note">Room lấy theo Phụ lục 1 / admin chỉnh ở tab ⚙️ Giá chặn &amp; Room</span></div>
+      <div class="row admin-only" style="display:none"><label>Lưu 2 hạn mức trên</label><button class="btn sm" id="limitSave">💾 Lưu hạn mức lên server</button><span class="note" id="limitInfo">Áp dụng cho tất cả người dùng</span></div>
     </div>
 
     <div class="card">
@@ -507,7 +508,7 @@
       </div>
       <div class="hint">
         Toàn bộ <b id="listCount">—</b> mã CP trong danh mục ký quỹ OCBS. Ô màu vàng: nhập giá chặn thật (lấy từ BOS). Chưa nhập → tính theo giá thị trường.
-        <br>Giá chặn được lưu tự động vào server, dùng chung cho tất cả tính toán.
+        <br>Sửa xong phải bấm nút <b>💾 Lưu</b> — dữ liệu ghi thẳng lên <b>server</b> (không lưu ở trình duyệt), web cập nhật cho mọi người sau ~1 phút.
         <br><b>Tỷ lệ cho vay</b> và <b>Room (HM 1 mã)</b> chỉ sửa được khi đã <b>đăng nhập admin</b>. Room bị kẹp bởi trần 1 mã
         (<span class="hm-stock">300 tỷ</span>) đặt ở tab 🧮 Rtt &amp; Danh mục.
       </div>
@@ -527,8 +528,10 @@
         </select>
         <button class="btn sm" id="capSave">💾 Lưu giá chặn</button>
         <button class="btn sm admin-only" id="ovSave" style="display:none">💾 Lưu tỷ lệ &amp; room</button>
+        <button class="btn sm admin-only" id="ovConnect" style="display:none;background:#00695c">🔗 Kết nối server</button>
         <button class="btn sm admin-only" id="ovExport" style="display:none;background:#455a64">⬇️ Xuất file JSON</button>
         <button class="btn sm admin-only" id="ovReset" style="display:none;background:#b71c1c">♻️ Về mặc định PL1</button>
+        <span class="admin-only" id="srvStatus" style="display:none;font-size:12px;font-weight:600"></span>
         <span class="info" id="capInfo"></span>
       </div>
       <div style="overflow-x:auto;max-height:60vh;overflow-y:auto;position:relative">
@@ -553,6 +556,6 @@
 
 </div>
 
-<script src="app.js?v=20260817-095048"></script>
+<script src="app.js?v=20260817-101017"></script>
 </body>
 </html>

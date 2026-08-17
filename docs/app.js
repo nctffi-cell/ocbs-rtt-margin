@@ -101,60 +101,131 @@ async function loadMaster() {
   if ($('listCount')) $('listCount').textContent = d.count || Object.keys(STATE.master).length;
   $('hdrInfo').textContent = `${d.count || 0} mã CK · cập nhật ${d.updated || '—'}`;
 }
-async function loadCaps() {
-  let base = {};
-  for (const url of ['/api/caps', 'caps.json']) {
-    try { const r = await fetch(url); if (r.ok) { base = await r.json(); break; } } catch(_) {}
+const LS_ADMIN = 'ocbs_admin_session';
+const LS_TOKEN = 'ocbs_server_token';
+
+// ╔════════════════ LƯU LÊN SERVER ════════════════════════════╗
+// Web chạy trên GitHub Pages (tĩnh) nên "server" ở đây = chính repo:
+// admin bấm lưu → ghi thẳng file docs/*.json trên GitHub qua Contents API,
+// GitHub Pages build lại ~1 phút → MỌI người vào web đều thấy số mới.
+// Chạy local bằng server.py thì ưu tiên /api/... cho nhanh.
+// KHÔNG dùng localStorage làm nơi lưu dữ liệu danh mục nữa.
+const GH_REPO   = 'nctffi-cell/ocbs-rtt-margin';
+const GH_BRANCH = 'main';
+const GH_FILES  = { caps: 'docs/caps.json', overrides: 'docs/overrides.json', settings: 'docs/settings.json' };
+
+const getToken = () => { try { return localStorage.getItem(LS_TOKEN) || ''; } catch(_) { return ''; } };
+const setToken = t => { try { t ? localStorage.setItem(LS_TOKEN, t) : localStorage.removeItem(LS_TOKEN); } catch(_) {} };
+
+// Base64 an toàn với tiếng Việt (btoa không nuốt được ký tự > 255)
+function b64(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = '';
+  bytes.forEach(b => bin += String.fromCharCode(b));
+  return btoa(bin);
+}
+async function ghApi(path, opts = {}) {
+  const tok = getToken();
+  return fetch(`https://api.github.com/repos/${GH_REPO}/contents/${path}`, Object.assign({}, opts, {
+    headers: Object.assign({
+      'Accept': 'application/vnd.github+json',
+      'Authorization': `Bearer ${tok}`,
+      'X-GitHub-Api-Version': '2022-11-28',
+    }, opts.headers || {}),
+  }));
+}
+// Ghi 1 file JSON lên repo. Trả {ok, msg}.
+async function ghSaveJson(path, obj, message) {
+  if (!getToken()) return { ok: false, msg: 'chưa kết nối server (thiếu token)' };
+  let sha = null;
+  try {
+    const r = await ghApi(`${path}?ref=${GH_BRANCH}`);
+    if (r.ok) sha = (await r.json()).sha;
+    else if (r.status === 401) return { ok: false, msg: 'token sai hoặc hết hạn' };
+    else if (r.status !== 404)  return { ok: false, msg: `không đọc được file (HTTP ${r.status})` };
+  } catch(e) { return { ok: false, msg: 'không kết nối được GitHub' }; }
+  try {
+    const r = await ghApi(path, {
+      method: 'PUT',
+      body: JSON.stringify({
+        message, branch: GH_BRANCH, sha: sha || undefined,
+        content: b64(JSON.stringify(obj, null, 2) + '\n'),
+      }),
+    });
+    if (r.ok) return { ok: true, msg: 'đã ghi lên server' };
+    const err = await r.json().catch(() => ({}));
+    return { ok: false, msg: `HTTP ${r.status} ${err.message || ''}`.trim() };
+  } catch(e) { return { ok: false, msg: 'không kết nối được GitHub' }; }
+}
+// Lưu chung cho caps & overrides: thử server.py trước, sau đó GitHub.
+async function saveToServer(kind, obj, message) {
+  try {
+    const r = await fetch(`/api/${kind}`, {method:'POST', headers:{'content-type':'application/json'},
+      body: JSON.stringify(obj)});
+    if (r.ok) return { ok: true, msg: 'đã lưu vào server local (server.py)' };
+  } catch(_) {}
+  return ghSaveJson(GH_FILES[kind], obj, message);
+}
+function showSaveResult(res, what, n) {
+  const el = $('capInfo');
+  if (res.ok) {
+    el.textContent = `✅ Đã lưu ${n} mã ${what} lên server — web cập nhật cho mọi người sau ~1 phút`;
+    el.style.color = '#2e7d32';
+  } else {
+    el.textContent = `❌ CHƯA lưu được ${what}: ${res.msg}. Bấm "🔗 Kết nối server" để nhập token, hoặc "⬇️ Xuất JSON" gửi IT.`;
+    el.style.color = '#c0392b';
   }
-  let local = {};
-  try { local = JSON.parse(localStorage.getItem(LS_CAPS) || '{}'); } catch(_) {}
-  STATE.caps = Object.assign({}, base, local);
+  setTimeout(() => { el.textContent = ''; el.style.color = ''; }, 12000);
+}
+
+// ── Đọc dữ liệu: luôn lấy bản trên server (thêm ?t= để không dính cache) ──
+const noCache = url => fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now(), {cache:'no-store'});
+
+async function loadCaps() {
+  STATE.caps = {};
+  for (const url of ['/api/caps', 'caps.json']) {
+    try { const r = await noCache(url); if (r.ok) { STATE.caps = await r.json(); return; } } catch(_) {}
+  }
 }
 async function saveCaps() {
-  let ok = false;
-  try {
-    const r = await fetch('/api/caps', {method:'POST', headers:{'content-type':'application/json'},
-      body: JSON.stringify(STATE.caps)});
-    ok = r.ok;
-  } catch(_) {}
-  try { localStorage.setItem(LS_CAPS, JSON.stringify(STATE.caps)); } catch(_) {}
-  $('capInfo').textContent = ok
-    ? `✓ Đã lưu ${Object.keys(STATE.caps).length} mã lên server`
-    : `✓ Đã lưu ${Object.keys(STATE.caps).length} mã (trên trình duyệt này)`;
-  setTimeout(()=>$('capInfo').textContent='', 3000);
+  const n = Object.keys(STATE.caps).length;
+  $('capInfo').textContent = '⏳ Đang lưu lên server…';
+  const res = await saveToServer('caps', STATE.caps, `data: cap nhat gia chan (${n} ma) - tu web admin`);
+  showSaveResult(res, 'giá chặn', n);
 }
 
 // ── Overrides: tỷ lệ cho vay (r) & room (HM 1 mã) do ADMIN chỉnh ──
-// Thứ tự ưu tiên: overrides (admin) → master list (Phụ lục 1).
-// Lưu: server /api/overrides nếu có (chạy server.py), luôn kèm localStorage
-// để bản GitHub Pages tĩnh vẫn giữ được chỉnh sửa trên máy admin.
-const LS_ADMIN = 'ocbs_admin_session';
-const LS_OVR   = 'ocbs_overrides';
-const LS_CAPS  = 'ocbs_caps';
-const LS_LIMIT = 'ocbs_limits';
-
+// Thứ tự ưu tiên khi tính: overrides (admin) → master list (Phụ lục 1).
 async function loadOverrides() {
-  let base = {};
+  STATE.overrides = {};
   for (const url of ['/api/overrides', 'overrides.json']) {
-    try { const r = await fetch(url); if (r.ok) { base = await r.json(); break; } } catch(_) {}
+    try { const r = await noCache(url); if (r.ok) { STATE.overrides = await r.json(); return; } } catch(_) {}
   }
-  let local = {};
-  try { local = JSON.parse(localStorage.getItem(LS_OVR) || '{}'); } catch(_) {}
-  STATE.overrides = Object.assign({}, base, local);
 }
 async function saveOverrides() {
-  let ok = false;
-  try {
-    const r = await fetch('/api/overrides', {method:'POST', headers:{'content-type':'application/json'},
-      body: JSON.stringify(STATE.overrides)});
-    ok = r.ok;
-  } catch(_) {}
-  try { localStorage.setItem(LS_OVR, JSON.stringify(STATE.overrides)); } catch(_) {}
   const n = Object.keys(STATE.overrides).length;
-  $('capInfo').textContent = ok
-    ? `✓ Đã lưu ${n} mã (tỷ lệ/room) lên server`
-    : `✓ Đã lưu ${n} mã (tỷ lệ/room) trên trình duyệt này — bấm "Xuất file JSON" để đưa lên web cho mọi người`;
-  setTimeout(()=>$('capInfo').textContent='', 5000);
+  $('capInfo').textContent = '⏳ Đang lưu lên server…';
+  const res = await saveToServer('overrides', STATE.overrides, `data: cap nhat ty le & room (${n} ma) - tu web admin`);
+  showSaveResult(res, 'tỷ lệ & room', n);
+}
+// Kết nối server: nhập Personal Access Token (chỉ lưu trên máy admin)
+function connectServer() {
+  const cur = getToken();
+  const msg = cur
+    ? 'Đang kết nối server rồi.\n\nDán token mới để đổi, hoặc để TRỐNG rồi OK để ngắt kết nối:'
+    : 'Dán GitHub Personal Access Token (fine-grained, quyền Contents: Read and write cho repo ' + GH_REPO + '):\n\n'
+      + 'Token chỉ lưu trên máy này, dùng để ghi thay đổi lên server.';
+  const t = prompt(msg, '');
+  if (t === null) return;                       // bấm Cancel
+  setToken(t.trim());
+  updateServerStatus();
+}
+function updateServerStatus() {
+  const el = $('srvStatus'); if (!el) return;
+  const on = !!getToken();
+  el.textContent = on ? '🟢 Đã kết nối server' : '🔴 Chưa kết nối server';
+  el.style.color = on ? '#2e7d32' : '#c0392b';
+  if ($('ovConnect')) $('ovConnect').textContent = on ? '🔗 Đổi/ngắt token' : '🔗 Kết nối server';
 }
 function exportOverrides() {
   const blob = new Blob([JSON.stringify(STATE.overrides, null, 2)], {type:'application/json'});
@@ -164,16 +235,25 @@ function exportOverrides() {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 5000);
 }
-// Hạn mức tối đa (TK & 1 mã) — lưu cục bộ để lần sau vào web vẫn giữ
-function loadLimits() {
+// Hạn mức tối đa (TK & 1 mã) — cũng nằm trên server (docs/settings.json)
+async function loadLimits() {
   let d = null;
-  try { d = JSON.parse(localStorage.getItem(LS_LIMIT) || 'null'); } catch(_) {}
+  for (const url of ['/api/settings', 'settings.json']) {
+    try { const r = await noCache(url); if (r.ok) { d = await r.json(); break; } } catch(_) {}
+  }
   if (!d) return;
   if (d.maxLoan  && $('pMaxLoan'))  $('pMaxLoan').value  = d.maxLoan;
   if (d.maxStock && $('pMaxStock')) $('pMaxStock').value = d.maxStock;
 }
-function saveLimits() {
-  try { localStorage.setItem(LS_LIMIT, JSON.stringify({maxLoan:getMaxLoan(), maxStock:getMaxStock()})); } catch(_) {}
+async function saveLimits() {
+  $('limitInfo').textContent = '⏳ Đang lưu…';
+  const data = { maxLoan: getMaxLoan(), maxStock: getMaxStock() };
+  const res  = await saveToServer('settings', data,
+    `data: han muc TK ${(data.maxLoan/1e9)} ty / 1 ma ${(data.maxStock/1e9)} ty - tu web admin`);
+  const el = $('limitInfo');
+  el.textContent  = res.ok ? '✅ Đã lưu hạn mức lên server' : `❌ Chưa lưu được: ${res.msg}`;
+  el.style.color  = res.ok ? '#2e7d32' : '#c0392b';
+  setTimeout(() => { el.textContent = ''; }, 10000);
 }
 // Cập nhật các nhãn "90 tỷ" / "300 tỷ" trong ghi chú theo giá trị đang đặt
 function refreshLimitLabels() {
@@ -204,6 +284,7 @@ function applyAdminUI() {
   $('btnAdmin').textContent = on ? '🚪 Thoát admin' : '🔒 Admin';
   $$('[data-admin]').forEach(el => { el.disabled = !on; });
   $$('.admin-only').forEach(el => { el.style.display = on ? '' : 'none'; });
+  updateServerStatus();
   if (typeof renderCaps === 'function' && document.querySelector('.panel[data-panel="caps"]')?.classList.contains('active')) renderCaps();
 }
 async function doLogin() {
@@ -348,11 +429,12 @@ function onHoldingChange(e) {
     STATE.holdings[i].sym = sym;
     const rEl = document.querySelector(`input[data-i="${i}"][data-f="r"]`);
     if (rEl) { delete rEl.dataset.manualEdit; rEl.style.background = '#FFF9C4'; }
-    // Auto-fill T.lệ Margin từ master list ngay khi mã khớp
-    const masterR = STATE.master[sym]?.r;
-    if (masterR != null && rEl) {
-      rEl.value = masterR;
-      STATE.holdings[i].r = masterR;
+    // Auto-fill T.lệ Margin ngay khi mã khớp — lấy qua getR() để ăn theo
+    // tỷ lệ admin đã chỉnh (overrides), không đọc thẳng master list.
+    if (rEl && STATE.master[sym]) {
+      const rNow = getR(sym);
+      rEl.value = rNow;
+      STATE.holdings[i].r = rNow;
     }
     // Auto-fill giá tham chiếu nếu đã có sẵn trong cache (prices.json)
     const cachedPx = STATE.prices[sym]?.price;
@@ -386,15 +468,29 @@ async function onHoldingBlur(e) {
     setNumVal(inputPrice, p.price);
     STATE.holdings[i].price = p.price;
   }
-  // Gợi ý T.lệ margin từ master list. Mã NGOÀI danh mục ký quỹ → gợi ý 0% (không vay).
-  const masterR = STATE.master[sym]?.r;
+  // Gợi ý T.lệ margin (qua getR → ưu tiên tỷ lệ admin chỉnh).
+  // Mã NGOÀI danh mục ký quỹ → gợi ý 0% (không vay).
   const rEl = document.querySelector(`input[data-i="${i}"][data-f="r"]`);
   if (rEl && !rEl.dataset.manualEdit) {
-    const suggested = (masterR != null) ? masterR : 0;   // mã lạ → 0
+    const suggested = getR(sym);   // mã lạ → 0
     rEl.value = suggested;
     STATE.holdings[i].r = suggested;
   }
   recalcAll();
+}
+
+// Admin đổi tỷ lệ 1 mã → cập nhật luôn các dòng danh mục đang giữ mã đó
+// (trừ dòng người dùng đã tự sửa tay tỷ lệ).
+function syncHoldingRates(sym) {
+  const s = (sym || '').toUpperCase();
+  const rNow = getR(s);
+  for (let i = 0; i < STATE.holdings.length; i++) {
+    if ((STATE.holdings[i].sym || '').toUpperCase() !== s) continue;
+    const el = document.querySelector(`input[data-i="${i}"][data-f="r"]`);
+    if (el && el.dataset.manualEdit) continue;
+    if (el) el.value = rNow;
+    STATE.holdings[i].r = rNow;
+  }
 }
 
 function recalcHoldings() {
@@ -1420,6 +1516,7 @@ $('tblCaps').addEventListener('input', e => {
       STATE.overrides[sym][f] = val;
       t.style.background = '#FFF2CC'; t.style.color = '#7d6608'; t.style.fontWeight = '600';
     }
+    if (f === 'r') syncHoldingRates(sym);        // đồng bộ ngay xuống danh mục tab 1
     const ovN = Object.keys(STATE.overrides).length;
     $('capInfo').textContent = `${ovN} mã admin đã chỉnh — nhớ bấm 💾 Lưu tỷ lệ & room`;
     recalcAll();
@@ -1447,12 +1544,12 @@ $('capFilter').oninput = renderCaps;
 $('capExch').oninput   = renderCaps;
 if ($('ovSave'))   $('ovSave').onclick   = saveOverrides;
 if ($('ovExport')) $('ovExport').onclick = exportOverrides;
-if ($('ovReset'))  $('ovReset').onclick  = () => {
+if ($('ovConnect')) $('ovConnect').onclick = connectServer;
+if ($('ovReset'))  $('ovReset').onclick  = async () => {
   if (!isAdmin()) return;
   if (!confirm('Xoá toàn bộ tỷ lệ & room admin đã chỉnh, quay về mặc định Phụ lục 1?')) return;
   STATE.overrides = {};
-  try { localStorage.removeItem(LS_OVR); } catch(_) {}
-  saveOverrides();
+  await saveOverrides();
   renderCaps(); recalcAll();
 };
 
@@ -1461,11 +1558,12 @@ if ($('ovReset'))  $('ovReset').onclick  = () => {
  'dR','dRtt','dAdvDays','d1N','d1P','d1PB','d2Y','d2P','d2PB','d3Z','d3P','d4X','d4P','d4Pbuy']
 .forEach(id => { const el = $(id); if (el) el.addEventListener('input', recalcAll); });
 
-// Hạn mức tối đa (admin) — lưu lại & cập nhật nhãn ghi chú
+// Hạn mức tối đa (admin) — đổi số thì cập nhật nhãn ngay, bấm nút mới ghi lên server
 ['pMaxLoan','pMaxStock'].forEach(id => {
   const el = $(id); if (!el) return;
-  el.addEventListener('input', () => { saveLimits(); refreshLimitLabels(); });
+  el.addEventListener('input', refreshLimitLabels);
 });
+if ($('limitSave')) $('limitSave').onclick = saveLimits;
 
 ['d1Sym','d1SymB','d2Sym','d2SymB','d3Sym','d4Sym'].forEach(id => $(id).addEventListener('change', onDealSymBlur));
 $('bSym').addEventListener('change', onBuySymBlur);
@@ -1681,9 +1779,9 @@ function initTransfer() {
 
 // ── Init ───────────────────────────────────────────────────
 (async () => {
-  loadLimits();
-  refreshLimitLabels();
   wireAdmin();
+  await loadLimits();
+  refreshLimitLabels();
   await loadMaster();
   await loadCaps();
   await loadOverrides();

@@ -79,6 +79,23 @@ def api_overrides_post():
         json.dump(data, f, ensure_ascii=False, indent=2)
     return jsonify({"ok": True, "count": len(data)})
 
+# ── API: settings (hạn mức tối đa TK & 1 mã) ──────────────────
+SET_JSON = os.path.join(STATIC, "settings.json")
+
+@app.route("/api/settings", methods=["GET"])
+def api_settings_get():
+    if not os.path.exists(SET_JSON):
+        return jsonify({})
+    with open(SET_JSON, "r", encoding="utf-8") as f:
+        return jsonify(json.load(f))
+
+@app.route("/api/settings", methods=["POST"])
+def api_settings_post():
+    data = request.get_json() or {}
+    with open(SET_JSON, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    return jsonify({"ok": True})
+
 # ── API: realtime price proxy → SSI Iboard ────────────────────
 SSI_URL = "https://iboard-query.ssi.com.vn/stock/{sym}"
 SSI_HEADERS = {"accept": "application/json", "user-agent": "Mozilla/5.0"}
