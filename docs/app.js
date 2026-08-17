@@ -562,10 +562,20 @@ function getR(sym) {
 // định giá tài sản tính Rtt (PV). Khác với r (tỷ lệ cho vay).
 // Mã NGOÀI danh mục ký quỹ → ts = 0 (không được tính làm tài sản đảm bảo).
 function getTs(sym) {
-  const m = STATE.master[(sym||'').toUpperCase()];
+  const s = (sym||'').toUpperCase();
+  const o = STATE.overrides[s];                  // admin chỉnh ts (đổi nhóm CP) → ưu tiên
+  if (o && o.ts != null) return o.ts;
+  const m = STATE.master[s];
   if (!m) return 0;
   const t = (m.ts != null) ? m.ts : m.evalRatio;
   return (t != null) ? t : 0;
+}
+// Nhóm chất lượng CP (A/B/C/D/E) — chỉ để hiển thị, không vào công thức
+function getClass(sym) {
+  const s = (sym||'').toUpperCase();
+  const o = STATE.overrides[s];
+  if (o && o.class) return o.class;
+  return STATE.master[s]?.class || '';
 }
 function getCapHigh(sym) {
   const s = (sym||'').toUpperCase();
