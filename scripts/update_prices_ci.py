@@ -31,6 +31,9 @@ SCP_LATEST_URL = "https://sieucophieu.vn/api/v1/stock/latest/?symbols={syms}"
 SCP_TOKEN      = os.environ.get("SCP_TOKEN", "").strip()
 SCP_BATCH      = 50
 SSI_URL        = "https://iboard-query.ssi.com.vn/stock/{sym}"
+# Server admin (Cloudflare Worker): mã admin thêm mới trên web nằm ở đây,
+# chưa có trong docs/stocks.json → vẫn phải lấy giá cho chúng.
+API_URL        = os.environ.get("OCBS_API", "https://ocbs-admin.webchungkhoan68.workers.dev").rstrip("/")
 UA             = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
 
 # Giờ VN (UTC+7) — server GitHub chạy theo UTC.
@@ -40,6 +43,22 @@ VN_TZ = timezone(timedelta(hours=7))
 def log(msg):
     ts = datetime.now(VN_TZ).strftime("%Y-%m-%d %H:%M:%S")
     print(f"[{ts}] {msg}", flush=True)
+
+
+def fetch_admin_symbols():
+    """Mã admin thêm trên web (lưu ở Worker), trả về dict {sym: {...}}."""
+    if not API_URL:
+        return {}
+    try:
+        req = Request(f"{API_URL}/data", headers={"user-agent": UA})
+        with urlopen(req, timeout=15) as r:
+            data = json.loads(r.read().decode("utf-8"))
+        stocks = ((data or {}).get("master") or {}).get("stocks") or {}
+        log(f"  (server admin) có {len(stocks)} mã trong danh mục web")
+        return stocks
+    except (URLError, HTTPError, TimeoutError, ValueError) as e:
+        log(f"  (server admin) bỏ qua: {e}")
+        return {}
 
 
 def next_business_day(d: datetime) -> datetime:
@@ -111,6 +130,11 @@ def main():
     with open(STOCKS_JSON, "r", encoding="utf-8") as f:
         master = json.load(f)
     stocks = master.get("stocks") or {}
+    # Gộp thêm mã admin đã thêm/sửa trên web nhưng chưa có trong stocks.json
+    extra = {k: v for k, v in fetch_admin_symbols().items() if k not in stocks}
+    if extra:
+        log(f"  Thêm {len(extra)} mã từ danh mục web: {', '.join(sorted(extra))}")
+        stocks = {**stocks, **extra}
     symbols = sorted(stocks.keys())
     log(f"─── Lấy giá tham chiếu cho {len(symbols)} mã ───")
 

@@ -83,6 +83,10 @@ input[data-admin]:disabled,input.adm-lock:disabled{background:#eceff1;color:#546
 .modal input{width:100%;text-align:left;text-transform:none}
 .modal-err{color:#c62828;font-size:12px;font-weight:600;min-height:18px;margin-top:8px}
 .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}
+.add-grid{display:grid;grid-template-columns:150px 1fr;gap:8px 12px;align-items:center}
+.add-grid .modal-lbl{margin:0}
+.add-grid select{padding:6px 10px;border:1px solid var(--line);border-radius:4px;font-family:inherit;font-size:14px;width:100%;background:var(--in);font-weight:600;color:#0d47a1}
+@media (max-width:520px){.add-grid{grid-template-columns:1fr;gap:4px}}
 @media (max-width:600px){.alert-grid{grid-template-columns:1fr}}
 @media (max-width:768px){
   .row{grid-template-columns:1fr;gap:4px}

@@ -407,6 +407,62 @@ async function saveMaster() {
   const data = { updated: new Date().toISOString().slice(0,19).replace('T',' '), stocks: STATE.master };
   return saveToServer('master', data, 'data: cap nhat danh muc ky quy - tu web admin');
 }
+// ── Thêm 1 mã mới vào danh mục ký quỹ (admin) ──────────────
+function wireAddStock() {
+  const box = $('addModal'); if (!box) return;
+  const close = () => box.classList.remove('open');
+  if ($('ovAdd')) $('ovAdd').onclick = () => {
+    ['addSym','addName','addCap','addLimit'].forEach(id => $(id).value = '');
+    $('addR').value = 0.5; $('addTs').value = 1; $('addExch').value = 'HOSE';
+    $('addInfo').textContent = '';
+    box.classList.add('open');
+    setTimeout(() => $('addSym').focus(), 50);
+  };
+  $('addCancel').onclick = close;
+  box.onclick = e => { if (e.target.id === 'addModal') close(); };
+
+  $('addSave').onclick = async () => {
+    if (!isAdmin()) return;
+    const sym = ($('addSym').value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const info = $('addInfo');
+    if (!sym) { info.textContent = '❌ Chưa nhập mã CK'; return; }
+    if (STATE.master[sym]) {
+      info.textContent = `❌ ${sym} đã có trong danh mục — đóng cửa sổ này rồi sửa thẳng trên bảng`;
+      $('capSearch').value = sym; renderCaps();
+      return;
+    }
+    const num = id => { const v = $(id).value.trim(); return v === '' ? null : +v; };
+    const r  = num('addR'), ts = num('addTs');
+    if (r == null || r < 0 || r > 1)   { info.textContent = '❌ Tỷ lệ cho vay phải trong khoảng 0–1'; return; }
+    if (ts == null || ts < 0 || ts > 1){ info.textContent = '❌ ts TSĐB phải trong khoảng 0–1'; return; }
+    const lim = num('addLimit');
+    STATE.master[sym] = {
+      name: ($('addName').value || '').trim() || sym,
+      exch: $('addExch').value,
+      r, ts, evalRatio: ts,
+      cap:   num('addCap'),
+      limit: lim != null ? lim * 1e9 : null,
+    };
+    info.style.color = '#7d6608';
+    info.textContent = '⏳ Đang lưu lên server…';
+    const res = await saveMaster();
+    if (!res.ok) {
+      info.style.color = '#c0392b';
+      info.textContent = `❌ Đã thêm trên màn hình nhưng CHƯA lưu được: ${res.msg}`;
+    } else {
+      info.style.color = '#2e7d32';
+      info.textContent = `✅ Đã thêm ${sym} và lưu lên server`;
+      setTimeout(close, 1200);
+    }
+    // Hiện mã vừa thêm để kiểm tra ngay
+    $('capSearch').value = sym;
+    $('hdrInfo').textContent = `${Object.keys(STATE.master).length} mã CK · vừa thêm ${sym}`;
+    renderCaps(); recalcAll();
+  };
+  ['addSym','addName','addCap','addLimit','addR','addTs'].forEach(id =>
+    $(id).addEventListener('keydown', e => { if (e.key === 'Enter') $('addSave').click(); }));
+}
+
 function wireImport() {
   const box = $('impModal'); if (!box) return;
   const open = () => { box.classList.add('open'); $('impText').value = ''; $('impInfo').textContent = ''; };
@@ -2040,6 +2096,7 @@ function initTransfer() {
 (async () => {
   wireAdmin();
   wireImport();
+  wireAddStock();
   await loadServerData();        // dữ liệu admin đang lưu trên server (nếu đã cấu hình)
   updateServerStatus();
   await loadLimits();

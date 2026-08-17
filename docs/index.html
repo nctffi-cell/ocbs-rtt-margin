@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>OCBS Margin Calculator</title>
-<link rel="stylesheet" href="style.css?v=20260817-105710">
+<link rel="stylesheet" href="style.css?v=20260817-110442">
 </head>
 <body>
 <header>
@@ -28,6 +28,41 @@
       <div class="modal-actions">
         <button class="btn" id="admLogin">Đăng nhập</button>
         <button class="btn sm" id="admCancel" style="background:#90a4ae">Đóng</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Modal thêm 1 mã mới ===== -->
+<div class="modal-bg" id="addModal">
+  <div class="modal" style="width:min(520px,94vw)">
+    <div class="modal-head">➕ THÊM MÃ VÀO DANH MỤC KÝ QUỸ</div>
+    <div class="modal-body">
+      <div class="hint" style="margin:0 0 10px">Dùng khi OCBS bổ sung mã mới mà danh mục trên web chưa có. Mã đã có sẵn thì sửa thẳng trên bảng, không cần thêm lại.</div>
+      <div class="add-grid">
+        <label class="modal-lbl">Mã CK *</label>
+        <input type="text" id="addSym" placeholder="VD: HKT" maxlength="10">
+        <label class="modal-lbl">Tên công ty</label>
+        <input type="text" id="addName" placeholder="VD: CTCP Hà Tây">
+        <label class="modal-lbl">Sàn</label>
+        <select id="addExch">
+          <option value="HOSE">HOSE</option>
+          <option value="HNX">HNX</option>
+          <option value="UPCOM">UPCOM</option>
+        </select>
+        <label class="modal-lbl">Tỷ lệ cho vay</label>
+        <input type="number" id="addR" value="0.5" step="0.05" min="0" max="1">
+        <label class="modal-lbl">ts TSĐB</label>
+        <input type="number" id="addTs" value="1" step="0.1" min="0" max="1">
+        <label class="modal-lbl">Giá chặn trên (đ)</label>
+        <input type="number" id="addCap" placeholder="để trống = dùng giá TT">
+        <label class="modal-lbl">Room (tỷ đồng)</label>
+        <input type="number" id="addLimit" placeholder="để trống = dùng trần 1 mã">
+      </div>
+      <div id="addInfo" class="modal-err"></div>
+      <div class="modal-actions">
+        <button class="btn" id="addSave">✅ Thêm &amp; lưu server</button>
+        <button class="btn sm" id="addCancel" style="background:#90a4ae">Đóng</button>
       </div>
     </div>
   </div>
@@ -549,6 +584,7 @@
           <option value="UPCOM">UPCOM</option>
         </select>
         <button class="btn sm admin-only" id="capSave" style="display:none" title="Lưu tỷ lệ, ts, room và giá chặn lên server">💾 Lưu</button>
+        <button class="btn sm admin-only" id="ovAdd" style="display:none;background:#1a5276">➕ Thêm mã mới</button>
         <button class="btn sm admin-only" id="ovImport" style="display:none;background:#2e7d32">📥 Nhập danh mục mới</button>
         <button class="btn sm admin-only" id="ovConnect" style="display:none;background:#00695c">🔗 Kết nối server</button>
         <button class="btn sm admin-only" id="ovExport" style="display:none;background:#455a64">⬇️ Xuất file JSON</button>
@@ -579,6 +615,6 @@
 
 </div>
 
-<script src="app.js?v=20260817-105710"></script>
+<script src="app.js?v=20260817-110442"></script>
 </body>
 </html>
