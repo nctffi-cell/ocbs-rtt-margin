@@ -50,6 +50,32 @@ export default {
       return json(out);
     }
 
+    // ── Tra thông tin 1 mã (tên, sàn, giá) từ SSI ────────────
+    // SSI chặn gọi thẳng từ trình duyệt (CORS), nên Worker gọi hộ.
+    if (path.startsWith('/stock/') && req.method === 'GET') {
+      const sym = path.slice(7).toUpperCase().replace(/[^A-Z0-9]/g, '');
+      if (!sym) return json({ ok: false, error: 'thiếu mã CK' }, 400);
+      try {
+        const r = await fetch(`https://iboard-query.ssi.com.vn/stock/${sym}`, {
+          headers: { accept: 'application/json', 'user-agent': 'Mozilla/5.0' },
+        });
+        if (!r.ok) return json({ ok: false, error: `không tra được (HTTP ${r.status})` });
+        const d = ((await r.json()) || {}).data || {};
+        if (!d.stockSymbol) return json({ ok: false, error: 'không tìm thấy mã này' });
+        return json({
+          ok: true,
+          sym:  d.stockSymbol,
+          name: d.companyNameVi || d.companyNameEn || '',
+          exch: (d.exchange || '').toUpperCase(),
+          ref:  d.refPrice ?? null,
+          ceiling: d.ceiling ?? null,
+          floor:   d.floor ?? null,
+        });
+      } catch (_) {
+        return json({ ok: false, error: 'không kết nối được nguồn giá' });
+      }
+    }
+
     // ── Admin lưu thay đổi ───────────────────────────────────
     if (path === '/save' && req.method === 'POST') {
       if (!env.DB) return json({ ok: false, error: 'chưa gắn KV namespace tên DB' }, 500);

@@ -407,14 +407,58 @@ async function saveMaster() {
   const data = { updated: new Date().toISOString().slice(0,19).replace('T',' '), stocks: STATE.master };
   return saveToServer('master', data, 'data: cap nhat danh muc ky quy - tu web admin');
 }
+// Tra tên công ty / sàn / giá của 1 mã qua server (server gọi hộ SSI).
+async function lookupStock(sym) {
+  const api = getApi(); if (!api) return null;
+  try {
+    const r = await fetch(`${api}/stock/${sym}`, {cache:'no-store'});
+    const j = await r.json().catch(() => null);
+    return (j && j.ok) ? j : null;
+  } catch(_) { return null; }
+}
+
 // ── Thêm 1 mã mới vào danh mục ký quỹ (admin) ──────────────
 function wireAddStock() {
   const box = $('addModal'); if (!box) return;
   const close = () => box.classList.remove('open');
+
+  // Gõ xong mã → tự điền tên, sàn và gợi ý giá tham chiếu
+  let lookupTimer = null, lastLooked = '';
+  const autoFill = async () => {
+    const sym = ($('addSym').value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const info = $('addInfo');
+    if (sym.length < 3 || sym === lastLooked) return;
+    lastLooked = sym;
+    if (STATE.master[sym]) {
+      info.style.color = '#c0392b';
+      info.textContent = `❌ ${sym} đã có trong danh mục — đóng cửa sổ này rồi sửa thẳng trên bảng`;
+      return;
+    }
+    info.style.color = '#7d6608';
+    info.textContent = `⏳ Đang tra ${sym}…`;
+    const d = await lookupStock(sym);
+    if (($('addSym').value || '').toUpperCase().replace(/[^A-Z0-9]/g, '') !== sym) return;  // đã gõ tiếp
+    if (!d) {
+      info.style.color = '#7d6608';
+      info.textContent = `⚠️ Không tra được ${sym} — nhập tay tên và sàn`;
+      return;
+    }
+    if (d.name) $('addName').value = d.name;
+    if (d.exch && [...$('addExch').options].some(o => o.value === d.exch)) $('addExch').value = d.exch;
+    STATE.prices[sym] = { price: d.ref, ref: d.ref };     // để mã mới có giá dùng ngay
+    info.style.color = '#2e7d32';
+    info.textContent = `✅ ${d.name || sym} · ${d.exch || '—'} · giá TC ${fmtVND(d.ref)}đ`
+      + ` (trần ${fmtVND(d.ceiling)} / sàn ${fmtVND(d.floor)})`;
+  };
+  $('addSym').addEventListener('input', () => {
+    clearTimeout(lookupTimer);
+    lookupTimer = setTimeout(autoFill, 500);
+  });
+  $('addSym').addEventListener('change', autoFill);
   if ($('ovAdd')) $('ovAdd').onclick = () => {
     ['addSym','addName','addCap','addLimit'].forEach(id => $(id).value = '');
     $('addR').value = 0.5; $('addTs').value = 1; $('addExch').value = 'HOSE';
-    $('addInfo').textContent = '';
+    $('addInfo').textContent = ''; lastLooked = '';
     box.classList.add('open');
     setTimeout(() => $('addSym').focus(), 50);
   };
