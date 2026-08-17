@@ -18,8 +18,8 @@ const DEF_MAX_STOCK = 300e9;
 const fmtVND = n => (n==null || isNaN(n)) ? '—' : Math.round(n).toLocaleString('vi-VN');
 const getFb       = () => (+$('pFb').value       || 0.15) / 100;
 const getFs       = () => getFb() + 0.001;
-const getLoanRate = () => (+($('pLoanRate')?.value) || 13) / 100;   // lãi vay %/năm → tỷ lệ
-const getAdvRate  = () => (+($('pAdvRate')?.value)  || 13) / 100;   // lãi ứng trước %/năm → tỷ lệ
+const getLoanRate = () => (+($('pLoanRate')?.value) || 14) / 100;   // lãi vay %/năm → tỷ lệ
+const getAdvRate  = () => (+($('pAdvRate')?.value)  || 14) / 100;   // lãi ứng trước %/năm → tỷ lệ
 // Hai ô hạn mức nhập theo kiểu có dấu phân cách nghìn (data-num) → dùng parseNum.
 const getMaxLoan  = () => parseNum($('pMaxLoan')?.value)  || DEF_MAX_LOAN;
 // Trần dư nợ tối đa cho 1 mã — kẹp lên trên room từng mã (PL1 / admin chỉnh).
