@@ -1,6 +1,6 @@
 {
-  "updated": "2026-05-28T21:40:07",
-  "count": 322,
+  "updated": "2026-08-26",
+  "count": 312,
   "stocks": {
     "AAA": {
       "name": "CTCP Nhựa An Phát Xanh",
@@ -68,6 +68,17 @@
       "nganh": "Hàng cá nhân & Gia dụng",
       "evalRatio": 1.0
     },
+    "AFX": {
+      "name": "CTCP Xuất nhập khẩu Nông sản Thực phẩm An Giang",
+      "exch": "HOSE",
+      "r": 0.5,
+      "ts": 1.0,
+      "cap": null,
+      "limit": 3000000000,
+      "class": "E",
+      "nganh": "",
+      "evalRatio": 1.0
+    },
     "AGG": {
       "name": "CTCP Đầu tư và Phát triển Bất động sản An Gia",
       "exch": "HOSE",
@@ -82,13 +93,13 @@
     "AGR": {
       "name": "CTCP Chứng khoán Agribank",
       "exch": "HOSE",
-      "r": 0.5,
-      "ts": 1.0,
+      "r": 0.3,
+      "ts": 0.6,
       "cap": null,
       "limit": 100000000000,
-      "class": "A",
+      "class": "D",
       "nganh": "Dịch vụ tài chính",
-      "evalRatio": 1.0
+      "evalRatio": 0.6
     },
     "ANV": {
       "name": "CTCP Nam Việt",
@@ -211,17 +222,6 @@
       "nganh": "Ngân hàng",
       "evalRatio": 1.0
     },
-    "BMC": {
-      "name": "CTCP Khoáng sản Bình Định",
-      "exch": "HOSE",
-      "r": 0.5,
-      "ts": 1.0,
-      "cap": 21800,
-      "limit": 3000000000,
-      "class": "E",
-      "nganh": "Tài nguyên Cơ bản",
-      "evalRatio": 1.0
-    },
     "BMP": {
       "name": "CTCP Nhựa Bình Minh",
       "exch": "HOSE",
@@ -253,17 +253,6 @@
       "limit": 270000000000,
       "class": "A",
       "nganh": "Dầu khí",
-      "evalRatio": 1.0
-    },
-    "BTP": {
-      "name": "Nhiệt điện Bà Rịa",
-      "exch": "HOSE",
-      "r": 0.5,
-      "ts": 1.0,
-      "cap": 12600,
-      "limit": 3000000000,
-      "class": "E",
-      "nganh": "Điện, nước & xăng dầu khí đốt",
       "evalRatio": 1.0
     },
     "BVH": {
@@ -299,6 +288,17 @@
       "nganh": "Điện, nước & xăng dầu khí đốt",
       "evalRatio": 0.8
     },
+    "C69": {
+      "name": "CTCP Xay dung 1369",
+      "exch": "HNX",
+      "r": 0.5,
+      "ts": 1.0,
+      "cap": null,
+      "limit": 3000000000,
+      "class": "E",
+      "nganh": "",
+      "evalRatio": 1.0
+    },
     "CCL": {
       "name": "CTCP Đầu tư và Phát triển Đô thị Dầu khí Cửu Long",
       "exch": "HOSE",
@@ -308,6 +308,17 @@
       "limit": 3000000000,
       "class": "E",
       "nganh": "Bất động sản",
+      "evalRatio": 1.0
+    },
+    "CDC": {
+      "name": "CTCP Chương Dương",
+      "exch": "HOSE",
+      "r": 0.5,
+      "ts": 1.0,
+      "cap": null,
+      "limit": 3000000000,
+      "class": "E",
+      "nganh": "",
       "evalRatio": 1.0
     },
     "CDN": {
@@ -401,13 +412,13 @@
     "CMG": {
       "name": "CTCP Tập đoàn Công nghệ CMC",
       "exch": "HOSE",
-      "r": 0.4,
-      "ts": 0.8,
+      "r": 0.3,
+      "ts": 0.6,
       "cap": null,
       "limit": 50000000000,
-      "class": "B",
+      "class": "C",
       "nganh": "Công nghệ Thông tin",
-      "evalRatio": 0.8
+      "evalRatio": 0.6
     },
     "CNG": {
       "name": "CTCP CNG Việt Nam",
@@ -430,17 +441,6 @@
       "class": "D",
       "nganh": "Xây dựng và Vật liệu",
       "evalRatio": 0.6
-    },
-    "CSM": {
-      "name": "CTCP Công nghiệp Cao su Miền Nam",
-      "exch": "HOSE",
-      "r": 0.5,
-      "ts": 1.0,
-      "cap": 18300,
-      "limit": 3000000000,
-      "class": "E",
-      "nganh": "Ô tô và phụ tùng",
-      "evalRatio": 1.0
     },
     "CSV": {
       "name": "CTCP Hóa chất cơ bản miền Nam",
@@ -517,17 +517,6 @@
       "limit": 100000000000,
       "class": "A",
       "nganh": "Dịch vụ tài chính",
-      "evalRatio": 1.0
-    },
-    "D2D": {
-      "name": "CTCP Phát triển Đô thị Công nghiệp số 2",
-      "exch": "HOSE",
-      "r": 0.5,
-      "ts": 1.0,
-      "cap": 50200,
-      "limit": 3000000000,
-      "class": "E",
-      "nganh": "Bất động sản",
       "evalRatio": 1.0
     },
     "DAT": {
@@ -636,7 +625,7 @@
       "ts": 1.0,
       "cap": null,
       "limit": 100000000000,
-      "class": "A",
+      "class": "E",
       "nganh": "Y tế",
       "evalRatio": 1.0
     },
@@ -660,6 +649,17 @@
       "limit": 270000000000,
       "class": "A",
       "nganh": "Bất động sản",
+      "evalRatio": 1.0
+    },
+    "DL1": {
+      "name": "CTCP Tập đoàn Alpha Seven",
+      "exch": "HNX",
+      "r": 0.5,
+      "ts": 1.0,
+      "cap": null,
+      "limit": 3000000000,
+      "class": "E",
+      "nganh": "",
       "evalRatio": 1.0
     },
     "DMC": {
@@ -882,12 +882,6 @@
       "nganh": "Dịch vụ tài chính",
       "evalRatio": 0.8
     },
-    "EVG": {
-      "name": "Tập đoàn Everland",
-      "exch": "HOSE",
-      "r": 0.2,
-      "ts": 0.8
-    },
     "EVS": {
       "name": "Chứng khoán EVS",
       "exch": "HNX",
@@ -908,6 +902,17 @@
       "limit": 3000000000,
       "class": "E",
       "nganh": "Xây dựng và Vật liệu",
+      "evalRatio": 1.0
+    },
+    "FIR": {
+      "name": "Công ty Cổ phần Địa ốc First Real",
+      "exch": "HOSE",
+      "r": 0.5,
+      "ts": 1.0,
+      "cap": null,
+      "limit": 3000000000,
+      "class": "E",
+      "nganh": "",
       "evalRatio": 1.0
     },
     "FMC": {
@@ -987,6 +992,17 @@
       "nganh": "Điện, nước & xăng dầu khí đốt",
       "evalRatio": 1.0
     },
+    "GEL": {
+      "name": "Công ty Cổ phần Hạ tầng GELEX",
+      "exch": "HOSE",
+      "r": 0.5,
+      "ts": 1.0,
+      "cap": null,
+      "limit": 3000000000,
+      "class": "E",
+      "nganh": "",
+      "evalRatio": 1.0
+    },
     "GEX": {
       "name": "CTCP Tập đoàn GELEX",
       "exch": "HOSE",
@@ -1031,17 +1047,6 @@
       "nganh": "Hóa chất",
       "evalRatio": 1.0
     },
-    "HAD": {
-      "name": "Bia Hà Nội - Hải Dương",
-      "exch": "HNX",
-      "r": 0.5,
-      "ts": 1.0,
-      "cap": 19900,
-      "limit": 3000000000,
-      "class": "E",
-      "nganh": "Thực phẩm và đồ uống",
-      "evalRatio": 1.0
-    },
     "HAG": {
       "name": "CTCP Hoàng Anh Gia Lai",
       "exch": "HOSE",
@@ -1073,17 +1078,6 @@
       "limit": 3000000000,
       "class": "E",
       "nganh": "Bất động sản",
-      "evalRatio": 1.0
-    },
-    "HAT": {
-      "name": "TM Bia Hà Nội",
-      "exch": "HNX",
-      "r": 0.5,
-      "ts": 1.0,
-      "cap": 47300,
-      "limit": 3000000000,
-      "class": "E",
-      "nganh": "Thực phẩm và đồ uống",
       "evalRatio": 1.0
     },
     "HAX": {
@@ -1196,26 +1190,15 @@
       "nganh": "Xây dựng và Vật liệu",
       "evalRatio": 1.0
     },
-    "HLC": {
-      "name": "Than Hà Lầm",
+    "HKT": {
+      "name": "Công ty cổ phần QP Holdings",
       "exch": "HNX",
       "r": 0.5,
       "ts": 1.0,
-      "cap": 19100,
+      "cap": null,
       "limit": 3000000000,
       "class": "E",
-      "nganh": "Tài nguyên Cơ bản",
-      "evalRatio": 1.0
-    },
-    "HLD": {
-      "name": "Bất động sản HUDLAND",
-      "exch": "HNX",
-      "r": 0.5,
-      "ts": 1.0,
-      "cap": 26500,
-      "limit": 3000000000,
-      "class": "E",
-      "nganh": "Bất động sản",
+      "nganh": "",
       "evalRatio": 1.0
     },
     "HNA": {
@@ -1317,17 +1300,6 @@
       "nganh": "Xây dựng và Vật liệu",
       "evalRatio": 1.0
     },
-    "HTN": {
-      "name": "CTCP Hưng Thịnh Incons",
-      "exch": "HOSE",
-      "r": 0.3,
-      "ts": 0.8,
-      "cap": 8500,
-      "limit": 20000000000,
-      "class": "D",
-      "nganh": "Bất động sản",
-      "evalRatio": 0.6
-    },
     "HUB": {
       "name": "Xây lắp Huế",
       "exch": "HOSE",
@@ -1349,17 +1321,6 @@
       "class": "B",
       "nganh": "Ô tô và phụ tùng",
       "evalRatio": 0.8
-    },
-    "HVT": {
-      "name": "CTCP Hóa chất Việt Trì",
-      "exch": "HNX",
-      "r": 0.5,
-      "ts": 1.0,
-      "cap": 40500,
-      "limit": 3000000000,
-      "class": "E",
-      "nganh": "Hóa chất",
-      "evalRatio": 1.0
     },
     "IDC": {
       "name": "Tổng Công ty IDICO - CTCP",
@@ -1397,13 +1358,13 @@
     "IJC": {
       "name": "CTCP Phát triển Hạ tầng Kỹ thuật",
       "exch": "HOSE",
-      "r": 0.5,
-      "ts": 1.0,
+      "r": 0.3,
+      "ts": 0.6,
       "cap": 20000,
       "limit": 100000000000,
-      "class": "A",
+      "class": "D",
       "nganh": "Bất động sản",
-      "evalRatio": 1.0
+      "evalRatio": 0.6
     },
     "ILB": {
       "name": "ICD Tân Cảng Long Bình",
@@ -1419,13 +1380,13 @@
     "IMP": {
       "name": "CTCP Dược phẩm Imexpharm",
       "exch": "HOSE",
-      "r": 0.4,
-      "ts": 0.8,
+      "r": 0.5,
+      "ts": 1.0,
       "cap": null,
       "limit": 50000000000,
-      "class": "B",
+      "class": "E",
       "nganh": "Y tế",
-      "evalRatio": 0.8
+      "evalRatio": 1.0
     },
     "INN": {
       "name": "Bao bì và In Nông Nghiệp",
@@ -1447,17 +1408,6 @@
       "limit": 3000000000,
       "class": "E",
       "nganh": "Hàng & Dịch vụ Công nghiệp",
-      "evalRatio": 1.0
-    },
-    "ITC": {
-      "name": "CTCP Đầu tư - Kinh doanh Nhà",
-      "exch": "HOSE",
-      "r": 0.5,
-      "ts": 1.0,
-      "cap": 18300,
-      "limit": 3000000000,
-      "class": "E",
-      "nganh": "Bất động sản",
       "evalRatio": 1.0
     },
     "IVS": {
@@ -1515,22 +1465,13 @@
       "nganh": "Bất động sản",
       "evalRatio": 1.0
     },
-    "KHP": {
-      "name": "CTCP Điện lực Khánh Hòa",
-      "exch": "HOSE",
-      "r": 0.5,
-      "ts": 1.0,
-      "cap": 16900,
-      "limit": 3000000000,
-      "class": "E",
-      "nganh": "Điện, nước & xăng dầu khí đốt",
-      "evalRatio": 1.0
-    },
     "KOS": {
       "name": "CTCP KOSY",
       "exch": "HOSE",
       "r": 0.3,
-      "ts": 0.6
+      "ts": 0.6,
+      "class": "C",
+      "evalRatio": 0.6
     },
     "KSB": {
       "name": "CTCP Khoáng sản và Xây dựng Bình Dương",
@@ -1574,6 +1515,17 @@
       "limit": 3000000000,
       "class": "E",
       "nganh": "Xây dựng và Vật liệu",
+      "evalRatio": 1.0
+    },
+    "L40": {
+      "name": "Công ty cổ phần Đầu tư và Xây dựng 40",
+      "exch": "HNX",
+      "r": 0.5,
+      "ts": 1.0,
+      "cap": null,
+      "limit": 3000000000,
+      "class": "E",
+      "nganh": "",
       "evalRatio": 1.0
     },
     "LAS": {
@@ -1697,15 +1649,15 @@
       "nganh": "Dịch vụ tài chính",
       "evalRatio": 1.0
     },
-    "MCF": {
-      "name": "Cơ khí và Lương thực Thực phẩm",
-      "exch": "HNX",
+    "MCH": {
+      "name": "Công ty cổ phần Hàng tiêu dùng MASAN",
+      "exch": "HOSE",
       "r": 0.5,
       "ts": 1.0,
-      "cap": 10500,
-      "limit": 3000000000,
-      "class": "E",
-      "nganh": "Thực phẩm và đồ uống",
+      "cap": null,
+      "limit": 100000000000,
+      "class": "A",
+      "nganh": "",
       "evalRatio": 1.0
     },
     "MIG": {
@@ -1755,13 +1707,13 @@
     "MST": {
       "name": "CTCP Đầu tư MST",
       "exch": "HNX",
-      "r": 0.3,
+      "r": 0.5,
       "ts": 1.0,
       "cap": 6000,
       "limit": 20000000000,
-      "class": "D",
+      "class": "E",
       "nganh": "Xây dựng và Vật liệu",
-      "evalRatio": 0.6
+      "evalRatio": 1.0
     },
     "MVB": {
       "name": "Mỏ Việt Bắc - TKV",
@@ -1807,28 +1759,6 @@
       "nganh": "Thực phẩm và đồ uống",
       "evalRatio": 0.6
     },
-    "NBB": {
-      "name": "577 CORP",
-      "exch": "HOSE",
-      "r": 0.5,
-      "ts": 1.0,
-      "cap": 26400,
-      "limit": 3000000000,
-      "class": "E",
-      "nganh": "Bất động sản",
-      "evalRatio": 1.0
-    },
-    "NBC": {
-      "name": "Than Núi Béo",
-      "exch": "HNX",
-      "r": 0.5,
-      "ts": 1.0,
-      "cap": 13000,
-      "limit": 3000000000,
-      "class": "E",
-      "nganh": "Tài nguyên Cơ bản",
-      "evalRatio": 1.0
-    },
     "NCT": {
       "name": "CTCP Dịch vụ Hàng hóa Nội Bài",
       "exch": "HOSE",
@@ -1860,17 +1790,6 @@
       "limit": 3000000000,
       "class": "E",
       "nganh": "Hàng cá nhân & Gia dụng",
-      "evalRatio": 1.0
-    },
-    "NHA": {
-      "name": "Tổng Công ty Đầu tư Phát triển Nhà và Đô thị Nam Hà Nội",
-      "exch": "HOSE",
-      "r": 0.5,
-      "ts": 1.0,
-      "cap": 22200,
-      "limit": 3000000000,
-      "class": "E",
-      "nganh": "Xây dựng và Vật liệu",
       "evalRatio": 1.0
     },
     "NHH": {
@@ -1924,7 +1843,7 @@
       "ts": 1.0,
       "cap": null,
       "limit": 100000000000,
-      "class": "A",
+      "class": "E",
       "nganh": "Điện, nước & xăng dầu khí đốt",
       "evalRatio": 1.0
     },
@@ -2181,6 +2100,17 @@
       "nganh": "Điện, nước & xăng dầu khí đốt",
       "evalRatio": 1.0
     },
+    "PPT": {
+      "name": "CTCP Petrotimes",
+      "exch": "HNX",
+      "r": 0.5,
+      "ts": 1.0,
+      "cap": null,
+      "limit": 3000000000,
+      "class": "E",
+      "nganh": "",
+      "evalRatio": 1.0
+    },
     "PRE": {
       "name": "Tái bảo hiểm PVI",
       "exch": "HNX",
@@ -2234,17 +2164,6 @@
       "limit": 3000000000,
       "class": "E",
       "nganh": "Bảo hiểm",
-      "evalRatio": 1.0
-    },
-    "PVB": {
-      "name": "CTCP Bọc Ống Dầu khí Việt Nam",
-      "exch": "HNX",
-      "r": 0.5,
-      "ts": 1.0,
-      "cap": 44700,
-      "limit": 3000000000,
-      "class": "E",
-      "nganh": "Dầu khí",
       "evalRatio": 1.0
     },
     "PVC": {
@@ -2357,17 +2276,6 @@
       "nganh": "Điện, nước & xăng dầu khí đốt",
       "evalRatio": 1.0
     },
-    "S55": {
-      "name": "Sông Đà 505",
-      "exch": "HNX",
-      "r": 0.5,
-      "ts": 1.0,
-      "cap": 83600,
-      "limit": 3000000000,
-      "class": "E",
-      "nganh": "Xây dựng và Vật liệu",
-      "evalRatio": 1.0
-    },
     "S99": {
       "name": "Sông Đà 9.09 (SCI)",
       "exch": "HNX",
@@ -2478,28 +2386,6 @@
       "nganh": "Điện, nước & xăng dầu khí đốt",
       "evalRatio": 1.0
     },
-    "SFG": {
-      "name": "Phân bón Miền Nam",
-      "exch": "HOSE",
-      "r": 0.5,
-      "ts": 1.0,
-      "cap": 14700,
-      "limit": 3000000000,
-      "class": "E",
-      "nganh": "Hóa chất",
-      "evalRatio": 1.0
-    },
-    "SFI": {
-      "name": "Vận tải SAFI",
-      "exch": "HOSE",
-      "r": 0.5,
-      "ts": 1.0,
-      "cap": 36900,
-      "limit": 3000000000,
-      "class": "E",
-      "nganh": "Hàng & Dịch vụ Công nghiệp",
-      "evalRatio": 1.0
-    },
     "SGC": {
       "name": "Bánh phồng tôm Sa Giang",
       "exch": "HNX",
@@ -2522,28 +2408,6 @@
       "nganh": "Hàng & Dịch vụ Công nghiệp",
       "evalRatio": 1.0
     },
-    "SGR": {
-      "name": "CTCP Tổng CTCP Địa ốc Sài Gòn",
-      "exch": "HOSE",
-      "r": 0.5,
-      "ts": 1.0,
-      "cap": 25300,
-      "limit": 3000000000,
-      "class": "E",
-      "nganh": "Bất động sản",
-      "evalRatio": 1.0
-    },
-    "SGT": {
-      "name": "Sài Gòn Telecom",
-      "exch": "HOSE",
-      "r": 0.5,
-      "ts": 1.0,
-      "cap": 22600,
-      "limit": 3000000000,
-      "class": "E",
-      "nganh": "Công nghệ Thông tin",
-      "evalRatio": 1.0
-    },
     "SHB": {
       "name": "Ngân hàng Thương mại Cổ phần Sài Gòn – Hà Nội",
       "exch": "HOSE",
@@ -2559,7 +2423,7 @@
       "name": "CTCP Quốc tế Sơn Hà",
       "exch": "HOSE",
       "r": 0.3,
-      "ts": 1.0,
+      "ts": 0.6,
       "cap": 20300,
       "limit": 50000000000,
       "class": "C",
@@ -2665,6 +2529,17 @@
       "nganh": "Thực phẩm và đồ uống",
       "evalRatio": 1.0
     },
+    "SMC": {
+      "name": "Công ty Cổ phần Đầu tư Thương mại SMC",
+      "exch": "HOSE",
+      "r": 0.5,
+      "ts": 1.0,
+      "cap": null,
+      "limit": 3000000000,
+      "class": "E",
+      "nganh": "",
+      "evalRatio": 1.0
+    },
     "SSB": {
       "name": "Ngân hàng Thương mại Cổ phần Đông Nam Á",
       "exch": "HOSE",
@@ -2745,13 +2620,13 @@
     "SZC": {
       "name": "CTCP Sonadezi Châu Đức",
       "exch": "HOSE",
-      "r": 0.5,
-      "ts": 1.0,
+      "r": 0.4,
+      "ts": 0.8,
       "cap": null,
       "limit": 100000000000,
-      "class": "A",
+      "class": "B",
       "nganh": "Bất động sản",
-      "evalRatio": 1.0
+      "evalRatio": 0.8
     },
     "SZL": {
       "name": "Sonadezi Long Thành",
@@ -2762,6 +2637,17 @@
       "limit": 3000000000,
       "class": "E",
       "nganh": "Bất động sản",
+      "evalRatio": 1.0
+    },
+    "TAL": {
+      "name": "Công ty cô phân Đầu tư Bất động sản Taseco",
+      "exch": "HOSE",
+      "r": 0.5,
+      "ts": 1.0,
+      "cap": null,
+      "limit": 100000000000,
+      "class": "A",
+      "nganh": "",
       "evalRatio": 1.0
     },
     "TBC": {
@@ -2885,17 +2771,6 @@
       "nganh": "Hàng & Dịch vụ Công nghiệp",
       "evalRatio": 1.0
     },
-    "TEG": {
-      "name": "Trường Thành Energy Group",
-      "exch": "HOSE",
-      "r": 0.5,
-      "ts": 1.0,
-      "cap": 8800,
-      "limit": 3000000000,
-      "class": "E",
-      "nganh": "Bất động sản",
-      "evalRatio": 1.0
-    },
     "TFC": {
       "name": "CTCP Trang",
       "exch": "HNX",
@@ -2971,17 +2846,6 @@
       "limit": 3000000000,
       "class": "E",
       "nganh": "Hàng cá nhân & Gia dụng",
-      "evalRatio": 1.0
-    },
-    "TMB": {
-      "name": "Than Miền Bắc - Vinacomin",
-      "exch": "HNX",
-      "r": 0.5,
-      "ts": 1.0,
-      "cap": 77700,
-      "limit": 3000000000,
-      "class": "E",
-      "nganh": "Tài nguyên Cơ bản",
       "evalRatio": 1.0
     },
     "TMP": {
@@ -3094,27 +2958,16 @@
       "nganh": "Dịch vụ tài chính",
       "evalRatio": 1.0
     },
-    "TVD": {
-      "name": "Than Vàng Danh",
-      "exch": "HNX",
-      "r": 0.5,
-      "ts": 1.0,
-      "cap": 14700,
-      "limit": 3000000000,
-      "class": "E",
-      "nganh": "Tài nguyên Cơ bản",
-      "evalRatio": 1.0
-    },
     "TVS": {
       "name": "CTCP Chứng khoán Thiên Việt",
       "exch": "HOSE",
-      "r": 0.4,
-      "ts": 0.8,
+      "r": 0.3,
+      "ts": 0.6,
       "cap": null,
       "limit": 100000000000,
-      "class": "B",
+      "class": "C",
       "nganh": "Dịch vụ tài chính",
-      "evalRatio": 0.8
+      "evalRatio": 0.6
     },
     "UIC": {
       "name": "Phát triển Nhà và Đô thị IDICO",
@@ -3142,7 +2995,7 @@
       "name": "CTCP Tập đoàn Nam Mê Kông",
       "exch": "HNX",
       "r": 0.3,
-      "ts": 1.0,
+      "ts": 0.6,
       "cap": 38100,
       "limit": 30000000000,
       "class": "C",
@@ -3193,6 +3046,17 @@
       "nganh": "Dịch vụ tài chính",
       "evalRatio": 1.0
     },
+    "VCK": {
+      "name": "Công ty cổ phần Chứng khoán VPS",
+      "exch": "HOSE",
+      "r": 0.5,
+      "ts": 1.0,
+      "cap": null,
+      "limit": 100000000000,
+      "class": "A",
+      "nganh": "",
+      "evalRatio": 1.0
+    },
     "VCS": {
       "name": "CTCP VICOSTONE",
       "exch": "HNX",
@@ -3200,7 +3064,7 @@
       "ts": 1.0,
       "cap": 70000,
       "limit": 100000000000,
-      "class": "A",
+      "class": "E",
       "nganh": "Xây dựng và Vật liệu",
       "evalRatio": 1.0
     },
@@ -3391,16 +3255,16 @@
       "nganh": "Bảo hiểm",
       "evalRatio": 1.0
     },
-    "VNS": {
-      "name": "Ánh Dương Việt Nam",
+    "VOS": {
+      "name": "Công ty Cổ phần Vận tải Biển Việt Nam",
       "exch": "HOSE",
-      "r": 0.5,
-      "ts": 1.0,
-      "cap": 12800,
-      "limit": 3000000000,
-      "class": "E",
-      "nganh": "Du lịch và Giải trí",
-      "evalRatio": 1.0
+      "r": 0.3,
+      "ts": 0.6,
+      "cap": null,
+      "limit": 30000000000,
+      "class": "C",
+      "nganh": "",
+      "evalRatio": 0.6
     },
     "VPB": {
       "name": "Ngân hàng Thương mại Cổ phần Việt Nam Thịnh Vượng",
@@ -3446,15 +3310,15 @@
       "nganh": "Du lịch và Giải trí",
       "evalRatio": 0.8
     },
-    "VRC": {
-      "name": "Bất động sản và Đầu tư VRC",
+    "VPX": {
+      "name": "Công ty cổ phần Chứng khoán VPBANK",
       "exch": "HOSE",
       "r": 0.5,
       "ts": 1.0,
-      "cap": 19000,
-      "limit": 3000000000,
-      "class": "E",
-      "nganh": "Bất động sản",
+      "cap": null,
+      "limit": 100000000000,
+      "class": "A",
+      "nganh": "",
       "evalRatio": 1.0
     },
     "VRE": {
@@ -3486,8 +3350,19 @@
       "ts": 0.6,
       "cap": 60500,
       "limit": 30000000000,
-      "class": "C",
+      "class": "D",
       "nganh": "Điện, nước & xăng dầu khí đốt",
+      "evalRatio": 0.6
+    },
+    "VTO": {
+      "name": "CTCP Vận Tải Xăng Dầu VITACO",
+      "exch": "HOSE",
+      "r": 0.3,
+      "ts": 0.6,
+      "cap": null,
+      "limit": 30000000000,
+      "class": "C",
+      "nganh": "",
       "evalRatio": 0.6
     },
     "VTP": {
@@ -3500,6 +3375,28 @@
       "class": "A",
       "nganh": "Hàng & Dịch vụ Công nghiệp",
       "evalRatio": 1.0
+    },
+    "VTZ": {
+      "name": "CTCP San xuat va Thuong mai Nhua Viet Thanh",
+      "exch": "HNX",
+      "r": 0.5,
+      "ts": 1.0,
+      "cap": null,
+      "limit": 3000000000,
+      "class": "E",
+      "nganh": "",
+      "evalRatio": 1.0
+    },
+    "VVS": {
+      "name": "Công ty cổ phần Đầu tư phát triển máy Việt Nam",
+      "exch": "HOSE",
+      "r": 0.3,
+      "ts": 0.6,
+      "cap": null,
+      "limit": 30000000000,
+      "class": "C",
+      "nganh": "",
+      "evalRatio": 0.6
     },
     "WCS": {
       "name": "Bến xe Miền Tây",
