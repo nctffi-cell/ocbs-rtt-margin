@@ -1314,13 +1314,13 @@
     "HUT": {
       "name": "CTCP Tasco",
       "exch": "HNX",
-      "r": 0.4,
-      "ts": 0.8,
+      "r": 0.5,
+      "ts": 1.0,
       "cap": 25000,
       "limit": 100000000000,
-      "class": "B",
+      "class": "A",
       "nganh": "Ô tô và phụ tùng",
-      "evalRatio": 0.8
+      "evalRatio": 1.0
     },
     "IDC": {
       "name": "Tổng Công ty IDICO - CTCP",
