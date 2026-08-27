@@ -1812,7 +1812,7 @@ function renderCaps() {
     const limCell = adm
       ? `<input type="number" step="1" min="0" data-sym="${row.sym}" data-f="limit"
             value="${roomTy != null ? roomTy : ''}" placeholder="${(ceiling/1e9).toFixed(0)}"
-            title="Room 1 mã, đơn vị TỶ đồng (trần ${fmtTy(ceiling)})" style="${row.limEdited ? editMark : ''}">`
+            title="Room 1 mã, đơn vị TỶ đồng (trần ${fmtTy(ceiling)}). Nhập SỐ CP (≥10.000) sẽ tự quy đổi × min(giá chặn, giá TC) ra dư nợ room" style="${row.limEdited ? editMark : ''}">`
       : `<span style="font-size:12px;color:${capped?'#c0392b':'#666'}">${roomTxt}${row.limEdited?' ✏️':''}</span>`;
     // Giá chặn cũng chỉ admin sửa (vì lưu lên server cần quyền admin)
     const capCell = (f, val, ph) => adm
@@ -1866,7 +1866,17 @@ $('tblCaps').addEventListener('input', e => {
     if (!isAdmin()) return;                       // chỉ admin mới ghi được
     const raw = t.value.trim();
     const num = raw === '' ? null : +raw;         // để trống = trả về mặc định PL1
-    const val = (num == null || isNaN(num)) ? null : (f === 'limit' ? num * 1e9 : num);
+    let val = (num == null || isNaN(num)) ? null : (f === 'limit' ? num * 1e9 : num);
+    // Room nhập theo SỐ CP (≥ 10.000): OCBS hiển thị room còn lại bằng số cp —
+    // quy tiền = số cp × min(giá chặn, giá TC) ra THẲNG dư nợ còn cho vay (không nhân r).
+    if (f === 'limit' && num != null && num >= 10000) {
+      const px = Math.min(getCapHigh(sym) || Infinity, STATE.prices[sym]?.price || Infinity);
+      if (isFinite(px) && px > 0) {
+        val = Math.round(num * px);
+        t.title = `${num.toLocaleString('vi-VN')} cp × ${px.toLocaleString('vi-VN')}đ = ` +
+                  `${(val/1e9).toLocaleString('vi-VN', {maximumFractionDigits:2})} tỷ`;
+      }
+    }
     if (val == null) {
       if (STATE.overrides[sym]) {
         delete STATE.overrides[sym][f];
