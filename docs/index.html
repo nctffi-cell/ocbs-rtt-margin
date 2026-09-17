@@ -137,7 +137,7 @@
       <table class="dm" id="tblHoldings">
         <thead><tr>
           <th>#</th><th>Mã CK</th><th>Số lượng</th><th>Giá TT (đ)</th><th>Giá đánh giá</th>
-          <th>T.lệ Margin ✏️</th><th>GT TT (đ)</th><th>Dư nợ max</th><th>Ký quỹ YC</th>
+          <th>T.lệ Margin ✏️</th><th>GT TT (đ)</th><th title="= GT TT × ts × T.lệ margin (kẹp HM 1 mã)">Dư nợ max</th><th title="= GT TT × ts × (1 − T.lệ margin)">Ký quỹ YC</th>
         </tr></thead>
         <tbody></tbody>
         <tfoot><tr id="rowTotal">
@@ -157,7 +157,7 @@
       <div class="row"><label><b>Tổng nợ D</b></label><div class="calc total" id="rD">0</div><span></span></div>
       <div class="row"><label><b>Vốn chủ E = V − D</b></label><div class="calc total" id="rE">0</div><span></span></div>
       <div class="row"><label><b>Tỷ lệ Rtt = E / V</b></label><div class="calc star" id="rRtt">—</div><span></span></div>
-      <div class="row"><label>Vốn chủ còn lại (đệm Rtt 50%)</label><div class="calc" id="rEE">0</div><span class="note">= E − 50%×V — phần vốn chủ chưa dùng, còn vay margin tiếp được</span></div>
+      <div class="row"><label>Dư ký quỹ EE (vốn chủ còn lại)</label><div class="calc" id="rEE">0</div><span class="note">= E − Ký quỹ YC — phần vốn chủ chưa dùng, còn vay margin tiếp được</span></div>
       <div class="row"><label>Còn lại đến hạn mức TK</label><div class="calc" id="rLoanRoom">0</div><span class="note">= HM tối đa TK (<span class="hm-acct">90 tỷ</span>) − D</span></div>
       <div class="status" id="rStatus">—</div>
 
@@ -275,7 +275,7 @@
       <div class="row"><label>D (Tổng nợ)</label><div class="calc" id="bD">0</div><span></span></div>
       <div class="row"><label>Rtt hiện tại</label><div class="calc" id="bRtt">—</div><span></span></div>
       <div class="row"><label>Vốn chủ E (V − D)</label><div class="calc" id="bDmax">0</div><span class="note">Tài sản ròng hiện có</span></div>
-      <div class="row"><label>Vốn chủ còn lại (đệm Rtt 50%) = EE</label><div class="calc" id="bEE">0</div><span class="note">= E − 50%×V — dư ký quỹ, còn vay margin tiếp được</span></div>
+      <div class="row"><label>Dư ký quỹ EE (vốn chủ còn lại)</label><div class="calc" id="bEE">0</div><span class="note">= E − Ký quỹ YC (Σ GT×ts×(1−T.lệ)) — còn vay margin tiếp được</span></div>
       <div class="row"><label>Còn lại đến HM tài khoản</label><div class="calc" id="bRoom">0</div><span class="note">= <span class="hm-acct">90 tỷ</span> − D</span></div>
       <div class="row"><label>Tiền mặt hiện có (M)</label><div class="calc" id="bM">0</div><span></span></div>
     </div>
@@ -285,9 +285,9 @@
       <div class="row"><label>Mã CK muốn mua</label><input id="bSym" type="text" placeholder="VD: HPG"><span class="note">Tự tra T.lệ margin</span></div>
       <div class="row"><label>Giá đặt mua (đ)</label><input id="bPrice" type="text" inputmode="numeric" data-num value="0"><span class="note" id="bPriceNote"></span></div>
       <div class="row"><label>T.lệ Margin CP này</label><div class="calc" id="bR">0%</div><span class="note">Auto từ master list</span></div>
-      <div class="row"><label>Sức mua từ dư ký quỹ (EE)</label><div class="calc" id="bBpRoom">0</div><span class="note">= EE / (1−T.lệ) — EE = E − (1−T.lệ)×V</span></div>
-      <div class="row"><label>Sức mua thêm từ tiền mặt</label><div class="calc" id="bBpCash">0</div><span class="note">= M / (1−T.lệ) — cộng thêm nếu có</span></div>
-      <div class="row"><label><b>Sức mua TỔNG (GT lệnh)</b></label><div class="calc star" id="bBpTotal">0</div><span class="note">= (EE + tiền mặt)/(1−T.lệ), kẹp HM 1 mã & HM TK (<span class="hm-acct">90 tỷ</span>)</span></div>
+      <div class="row"><label>Sức mua từ dư ký quỹ (EE)</label><div class="calc" id="bBpRoom">0</div><span class="note">= EE / (1 + phí − ts×T.lệ) — mã mua chỉ vay được GT × ts × T.lệ</span></div>
+      <div class="row"><label>Sức mua thêm từ tiền mặt</label><div class="calc" id="bBpCash">0</div><span class="note">= M / (1 + phí − ts×T.lệ) — cộng thêm nếu có</span></div>
+      <div class="row"><label><b>Sức mua TỔNG (GT lệnh)</b></label><div class="calc star" id="bBpTotal">0</div><span class="note">= EE/(1 + phí − ts×T.lệ), không vượt mốc Rtt 50%, kẹp HM 1 mã & HM TK (<span class="hm-acct">90 tỷ</span>)</span></div>
       <div class="row"><label><b>KL tối đa có thể đặt</b></label><div class="calc star" id="bQtyMax">0</div><span class="note">làm tròn xuống 100</span></div>
       <div class="row"><label>↳ Đang bị chặn bởi</label><div class="calc" id="bBoundBy">—</div><span class="note">Hạn mức giới hạn: HM 1 mã hay HM tài khoản (<span class="hm-acct">90 tỷ</span>)</span></div>
       <div class="row"><label>Phí mua ước tính</label><div class="calc" id="bFee">0</div><span class="note">theo KL tối đa</span></div>
@@ -299,9 +299,9 @@
       <div class="row"><label>KL muốn mua (tùy chọn)</label><input id="bQtyChoose" type="text" inputmode="numeric" data-num value="0"><span class="note">Để 0 = dùng KL tối đa ở trên</span></div>
       <div class="row"><label>GT lệnh (KL đã chọn)</label><div class="calc" id="bcVal">0</div><span class="note">= KL × giá đặt</span></div>
       <div class="row"><label>Phí mua</label><div class="calc" id="bcFee">0</div><span></span></div>
-      <div class="row"><label>Tiền vay</label><div class="calc" id="bcLoan">0</div><span class="note">= GT × T.lệ margin</span></div>
-      <div class="row"><label>Vốn tự có cần</label><div class="calc" id="bcEquity">0</div><span class="note">= GT × (1−T.lệ) + phí</span></div>
-      <div class="row"><label>Vốn chủ khả dụng (EE + tiền)</label><div class="calc" id="bcEquityAvail">0</div><span class="note">= dư ký quỹ EE + tiền mặt</span></div>
+      <div class="row"><label>Tiền vay</label><div class="calc" id="bcLoan">0</div><span class="note">= GT + phí − tiền mặt bỏ ra</span></div>
+      <div class="row"><label>Vốn tự có cần</label><div class="calc" id="bcEquity">0</div><span class="note">= GT × (1 − ts×T.lệ) + phí</span></div>
+      <div class="row"><label>Vốn chủ khả dụng (EE)</label><div class="calc" id="bcEquityAvail">0</div><span class="note">= dư ký quỹ EE (đã gồm tiền mặt)</span></div>
       <div class="row"><label>Kiểm tra sức mua</label><div class="calc" id="bcBpChk">—</div><span class="note">Vốn tự có cần ≤ vốn chủ khả dụng?</span></div>
       <div class="row"><label>Kiểm tra hạn mức nợ</label><div class="calc" id="bcRoomChk">—</div><span class="note">Tiền vay so HM 1 mã & HM tài khoản (<span class="hm-acct">90 tỷ</span>)</span></div>
       <div class="row"><label><b>Rtt sau khi mua (KL chọn)</b></label><div class="calc star" id="bcRtt">—</div><span class="note" id="bcRttFloorNote"></span></div>
@@ -313,7 +313,7 @@
       <div class="row"><label>KL mong muốn mua (CP)</label><input id="bQtyWant" type="number" value="0"><span class="note">Số CP định đặt</span></div>
       <div class="row"><label>GT lệnh mong muốn</label><div class="calc" id="bValWant">0</div><span></span></div>
       <div class="row"><label>Equity cần (KH có)</label><div class="calc" id="bEqWant">0</div><span></span></div>
-      <div class="row"><label>CTCK cho vay</label><div class="calc" id="bLoanWant">0</div><span></span></div>
+      <div class="row"><label>CTCK cho vay</label><div class="calc" id="bLoanWant">0</div><span class="note">= GT × ts × T.lệ margin</span></div>
       <div class="row"><label>Đủ Room chưa?</label><div class="calc" id="bRoomCheck">—</div><span></span></div>
       <div class="row"><label><b>Tiền cần NỘP THÊM</b></label><div class="calc star" id="bDeposit">0</div><span class="note">= Equity cần − Tiền có</span></div>
     </div>
@@ -337,7 +337,7 @@
       <div class="card-header">THAM SỐ CHUNG</div>
       <div class="row"><label>T.lệ margin CP (r)</label><input id="dR" type="number" value="0.5" step="0.05"><span class="note">Mặc định 50%</span></div>
       <div class="row"><label>Rtt mục tiêu sau giao dịch</label><input id="dRtt" type="number" value="0.5" step="0.05"><span class="note">0.5 = IM ban đầu (an toàn)</span></div>
-      <div class="row"><label>r' = min(r, 1−Rtt*)</label><div class="calc" id="dRp">0</div><span class="note">Ràng buộc chặt</span></div>
+      <div class="row"><label>r' = min(r, 1−Rtt*)</label><div class="calc" id="dRp">0</div><span class="note">Theo mã: vay thực trên GT = ts × r'</span></div>
       <div class="row"><label>Số ngày ứng (T+)</label><input id="dAdvDays" type="number" value="2" step="1" min="0"><span class="note">Lãi ứng lấy từ THAM SỐ OCBS; T+2 nếu không lễ/cuối tuần</span></div>
     </div>
 
@@ -615,6 +615,6 @@
 
 </div>
 
-<script src="app.js?v=20260827-143711"></script>
+<script src="app.js?v=20260917-204546"></script>
 </body>
 </html>
