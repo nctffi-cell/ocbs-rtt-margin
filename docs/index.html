@@ -137,11 +137,11 @@
       <table class="dm" id="tblHoldings">
         <thead><tr>
           <th>#</th><th>Mã CK</th><th>Số lượng</th><th>Giá TT (đ)</th><th>Giá đánh giá</th>
-          <th>T.lệ Margin ✏️</th><th>GT TT (đ)</th><th title="= GT TT × ts × T.lệ margin (kẹp HM 1 mã)">Dư nợ max</th><th title="= GT TT × ts × (1 − T.lệ margin)">Ký quỹ YC</th>
+          <th title="Tỷ lệ cho vay theo danh mục OCBS">T.lệ Margin ✏️</th><th title="Tỷ lệ tính tài sản đảm bảo">ts TSĐB</th><th title="Tỷ lệ vay thực trên giá trị thị trường = ts × T.lệ margin">Vay thực /GT</th><th>GT TT (đ)</th><th title="= GT TT × ts × T.lệ margin (kẹp HM 1 mã)">Dư nợ max</th><th title="= GT TT × ts × (1 − T.lệ margin)">Ký quỹ YC</th>
         </tr></thead>
         <tbody></tbody>
         <tfoot><tr id="rowTotal">
-          <td colspan="6" style="text-align:right;font-weight:700;background:var(--total)">TỔNG</td>
+          <td colspan="8" style="text-align:right;font-weight:700;background:var(--total)">TỔNG</td>
           <td class="calc total" id="totMV">0</td>
           <td class="calc total" id="totDmax">0</td>
           <td class="calc total" id="totMR">0</td>
@@ -229,7 +229,7 @@
       </div>
       <table class="dm" id="tblSell" style="min-width:680px">
         <thead><tr>
-          <th>Bán?</th><th>Mã CK</th><th>T.lệ vay</th><th>Đang giữ (CP)</th>
+          <th>Bán?</th><th>Mã CK</th><th title="Tỷ lệ vay thực trên giá trị thị trường = ts × T.lệ margin">Vay thực /GT</th><th>Đang giữ (CP)</th>
           <th>Giá bán (đ)</th><th>KL bán</th><th>GT bán (đ)</th><th>Tiền trả nợ</th>
         </tr></thead>
         <tbody></tbody>
@@ -284,7 +284,7 @@
       <div class="card-header">II. MUA THÊM CP (theo hạn mức dư nợ)</div>
       <div class="row"><label>Mã CK muốn mua</label><input id="bSym" type="text" placeholder="VD: HPG"><span class="note">Tự tra T.lệ margin</span></div>
       <div class="row"><label>Giá đặt mua (đ)</label><input id="bPrice" type="text" inputmode="numeric" data-num value="0"><span class="note" id="bPriceNote"></span></div>
-      <div class="row"><label>T.lệ Margin CP này</label><div class="calc" id="bR">0%</div><span class="note">Auto từ master list</span></div>
+      <div class="row"><label>T.lệ Margin CP này</label><div class="calc" id="bR">0%</div><span class="note">Auto từ master list — vay thực trên GT = ts × T.lệ</span></div>
       <div class="row"><label>Sức mua từ dư ký quỹ (EE)</label><div class="calc" id="bBpRoom">0</div><span class="note">= EE / (1 + phí − ts×T.lệ) — mã mua chỉ vay được GT × ts × T.lệ</span></div>
       <div class="row"><label>Sức mua thêm từ tiền mặt</label><div class="calc" id="bBpCash">0</div><span class="note">= M / (1 + phí − ts×T.lệ) — cộng thêm nếu có</span></div>
       <div class="row"><label><b>Sức mua TỔNG (GT lệnh)</b></label><div class="calc star" id="bBpTotal">0</div><span class="note">= EE/(1 + phí − ts×T.lệ), không vượt mốc Rtt 50%, kẹp HM 1 mã & HM TK (<span class="hm-acct">90 tỷ</span>)</span></div>
@@ -615,6 +615,6 @@
 
 </div>
 
-<script src="app.js?v=20260917-204546"></script>
+<script src="app.js?v=20260917-205632"></script>
 </body>
 </html>

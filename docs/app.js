@@ -747,6 +747,8 @@ function initHoldingsTable() {
           style="width:70px;text-align:right;background:#FFF9C4;color:#0d47a1;font-weight:600;
                  padding:4px 6px;border:1px solid #dbe3ec;border-radius:3px"
           title="T.lệ CTCK cho vay – tự gợi ý từ master list, có thể sửa"></td>
+      <td class="calc" data-i="${i}" data-f="ts" style="text-align:center">—</td>
+      <td class="calc" data-i="${i}" data-f="eff" style="text-align:center;font-weight:700">—</td>
       <td class="calc" data-i="${i}" data-f="mv">0</td>
       <td class="calc" data-i="${i}" data-f="dmax">0</td>
       <td class="calc" data-i="${i}" data-f="mr">0</td>
@@ -848,6 +850,10 @@ function recalcHoldings() {
     totMRpv += mr;
     totMV += mv; totPV += pv; totDmax += dmax; totMR += mr;
     // Update cells
+    // Hiện rõ ts và tỷ lệ vay THỰC trên GT thị trường (= ts × r) để không nhầm với T.lệ margin gốc.
+    const hasSym = !!(h.sym || '').trim();
+    document.querySelector(`td[data-i="${i}"][data-f="ts"]`).textContent  = hasSym ? (ts*100).toFixed(0) + '%' : '—';
+    document.querySelector(`td[data-i="${i}"][data-f="eff"]`).textContent = hasSym ? (ts*r*100).toFixed(0) + '%' : '—';
     document.querySelector(`[data-i="${i}"][data-f="evalPrice"]`).textContent = fmtVND(pEval);
     document.querySelector(`[data-i="${i}"][data-f="mv"]`).textContent = fmtVND(mv);
     document.querySelector(`[data-i="${i}"][data-f="dmax"]`).textContent = fmtVND(dmax);
@@ -1002,7 +1008,9 @@ function recalcBuy(V, D, room, cash) {
   const r     = getR(sym);
   const fb    = getFb();
 
-  $('bR').textContent = (r*100).toFixed(0) + '%';
+  { const tsB = getTs(sym);   // hiện cả tỷ lệ vay thực = ts × r khi mã có ts < 100%
+    $('bR').textContent = (r*100).toFixed(0) + '%'
+      + (r > 0 && tsB < 1 ? ` × ts ${(tsB*100).toFixed(0)}% = vay thực ${(tsB*r*100).toFixed(0)}% GT` : ''); }
 
   // ── CÔNG THỨC SỨC MUA OCBS (File tính sức mua - OCBS 1) ───────────────────
   //   Mua bằng tài sản đảm bảo: chi tiền = GT lệnh + phí (GT×fb); nợ tăng = chi − tiền mặt.
@@ -1486,7 +1494,7 @@ function renderSellTable() {
     tr.innerHTML = `
       <td style="text-align:center"><input type="checkbox" data-sym="${h.sym}" data-f="checked" ${plan.checked ? 'checked' : ''}></td>
       <td style="font-weight:700;color:#1F3864;text-align:center">${h.sym}</td>
-      <td style="text-align:center">${(h.r*100).toFixed(0)}%</td>
+      <td style="text-align:center">${(getTs(h.sym)*h.r*100).toFixed(0)}%</td>
       <td style="text-align:right">${fmtNum(h.qty)}</td>
       <td><input type="text" inputmode="numeric" data-num data-sym="${h.sym}" data-f="price" value="${fmtNumInput(sellPrice)}" style="width:120px"></td>
       <td><input type="text" inputmode="numeric" data-num data-sym="${h.sym}" data-f="qty" value="${fmtNumInput(sellQty)}" style="width:110px"></td>
