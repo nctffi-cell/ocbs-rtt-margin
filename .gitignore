@@ -1,10 +1,24 @@
 # ── File cá nhân / nội bộ — KHÔNG đẩy lên GitHub ─────────────
+# REPO ĐANG PUBLIC: mọi file theo dõi đều ai cũng xem được.
 # Công cụ Excel chạy trên máy (dữ liệu nội bộ)
 excel-tools/
 *.xlsx
+*.xlsm
+*.xlsb
 *.xls
-~$*                      # file lock Excel khi đang mở
+*.csv
 *.pdf
+# File lock Excel khi đang mở (git không cho ghi chú cùng dòng với pattern)
+~$*
+
+# Dữ liệu khách hàng / deal
+/Deal */
+/NextFIN/
+
+# Ảnh chụp màn hình để ở gốc repo (tài khoản khách)
+/*.png
+/*.jpg
+/*.jpeg
 
 # Log
 *.log
